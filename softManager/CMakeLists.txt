@@ -22,9 +22,11 @@ source_group(header_files FILES ${header_files})
 
 file(GLOB magick_hdrs "*.cpp")
 
-source_group(resource_files FILES ${magick_hdrs})
+source_group(source_files FILES ${magick_hdrs})
 
 file(GLOB resource_files "*.rc")
+
+source_group(resource_files FILES ${resource_files})
 
 add_executable(softManager
 	${COMMON_HEADER_FILES}
