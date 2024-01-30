@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" size="400,340">
+	<Font id="0" name="微软雅黑" size="12" default="true" />
+	<Font id="1" name="微软雅黑" size="16" />
+	<Font id="2" name="微软雅黑" size="18" />
+	<Font id="3" name="微软雅黑" />
+	<Font id="4" name="微软雅黑" size="14" />
+	<Font id="5" name="微软雅黑" size="24" />
+	<Font id="6" name="微软雅黑" size="48" />
+	<VerticalLayout bkcolor="0xFFFFFFFF" bordersize="1" bordercolor="0xFF000000" borderround="5,5">
+		<!--标题-->
+		<HorizontalLayout name="caption" padding="1,1,1,0" height="40" bkcolor="0xFFEEEEEE">
+			<Control />
+			<Button name="closebtn" width="39" height="20" tooltip="关闭" normalimage="file='images\btn_close_normal.png'" hotimage="file='images\btn_close_highlight.png'" pushedimage="file='images\btn_close_down.png' " />
+		</HorizontalLayout>
+		<VerticalLayout name="log_layout" padding="20,20,20" vscrollbar="true" />
+		<HorizontalLayout height="30" padding="20,20,20,20" childalign="right">
+			<Button name="btn_restart" width="120" bordersize="1" bordercolor="0xFF333333" text="立即重启" />
+		</HorizontalLayout>
+	</VerticalLayout>
+</Window>

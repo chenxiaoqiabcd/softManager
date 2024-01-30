@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ListContainerElement name="soft_item" height="40" bordersize="1" bordercolor="0xFFFF0000">
+	<HorizontalLayout>
+		<VerticalLayout width="60">
+			<Label name="num_label" padding="10,0,10,0" />
+		</VerticalLayout>
+		<Control width="1" bkcolor="0xFFCACACA" />
+		<VerticalLayout>
+			<HorizontalLayout>
+				<VerticalLayout width="32" padding="10">
+					<Control />
+					<Label name="soft_icon_label" height="32" />
+					<Control />
+				</VerticalLayout>
+				<Label name="soft_name_label" padding="10" />
+			</HorizontalLayout>
+		</VerticalLayout>
+		<Control width="1" bkcolor="0xFFCACACA" />
+		<VerticalLayout width="160">
+			<Label name="soft_version_label" padding="10" height="40" />
+		</VerticalLayout>
+		<Control width="1" bkcolor="0xFFCACACA" />
+		<VerticalLayout width="160">
+			<Label name="soft_remote_version_label" padding="10" height="40" />
+		</VerticalLayout>
+		<Control width="1" bkcolor="0xFFCACACA" />
+		<VerticalLayout width="80">
+			<Button name="update_btn" text="更新" align="center" height="40" />
+		</VerticalLayout>
+	</HorizontalLayout>
+</ListContainerElement>

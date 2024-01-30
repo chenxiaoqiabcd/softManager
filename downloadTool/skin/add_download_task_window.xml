@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" mininfo="800,160" maxinfo="800,600" size="800,600">
+	<Font id="0" name="微软雅黑" size="12" default="true" />
+	<Font id="1" name="微软雅黑" size="16" />
+	<Font id="2" name="微软雅黑" size="18" />
+	<Font id="3" name="微软雅黑" />
+	<Font id="4" name="微软雅黑" size="14" />
+	<Font id="5" name="微软雅黑" size="24" />
+	<Font id="6" name="微软雅黑" size="48" />
+	<VerticalLayout bordersize="1" bordercolor="0xFF5e5e5e" bkcolor="0xFFFFFFFF">
+		<!--标题-->
+		<HorizontalLayout name="caption" padding="1,1,1,0" height="40" bkcolor="0xEFEFEFEF">
+			<Label name="soft_name_label" padding="8" font="1" />
+			<Control />
+			<Button name="minbtn" width="40" tooltip="最小化" text="一" cursor="hand" />
+			<Button name="closebtn" width="40" padding="1" tooltip="关闭" text="×" cursor="hand" />
+		</HorizontalLayout>
+		<HorizontalLayout height="30" padding="20,20,20">
+			<Label text="请输入url链接" width="80" />
+			<Edit name="edit_url" padding="20" bordersize="1" bordercolor="0xFF7d7d7d" />
+		</HorizontalLayout>
+		<HorizontalLayout name="download_info_layout" height="30" padding="20,20,20">
+			<Label text="存储位置" width="80" />
+			<Edit name="edit_download_path" padding="20" bordersize="1" bordercolor="0xFF7d7d7d" readonly="true" />
+			<Label text="大小" width="40" padding="40" />
+			<Edit name="edit_size" width="200" padding="20" bordersize="1" bordercolor="0xFF7d7d7d" readonly="true" />
+		</HorizontalLayout>
+		<HorizontalLayout height="30" padding="20,20,20">
+			<Control />
+			<Button name="btn_ok" width="80" text="确定" bordersize="1" bordercolor="0xFF7d7d7d" textcolor="0xFFf2fbec" />
+			<Button name="btn_cancel" width="80" padding="20" text="取消" bordersize="1" bordercolor="0xFF7d7d7d" textcolor="0xFFf2fbec" />
+		</HorizontalLayout>
+	</VerticalLayout>
+</Window>

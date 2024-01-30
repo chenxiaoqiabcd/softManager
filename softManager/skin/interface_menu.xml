@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="140,80" bktrans="true">
+	<Menu bkcolor="0xFF000000">
+		<MenuElement name="menu_dark_scheme" text="  深色主题" height="40" />
+		<MenuElement name="menu_light_scheme" text="  浅色主题" height="40" />
+	</Menu>
+</Window>

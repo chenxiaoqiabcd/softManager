@@ -1,0 +1,14 @@
+[
+	{
+		"name": "WinMerge*",
+		"url": "https://winmerge.org/downloads/?lang=en",
+		"url_path": "/html/body/div[2]/main/div[2]/table/tbody/tr[2]/td[1]/a",
+		"version_path": "/html/body/div[2]/main/div[2]/table/tbody/tr[2]/td[1]/a"
+	},
+	{
+		"name": "ToDesk",
+		"url": "https://www.todesk.com/download.html",
+		"url_path": "/html/body/div/div/div/div[1]/div[2]/div[1]/div[1]/section/div[1]/a",
+		"version_path": "/html/body/div/div/div/div[1]/div[2]/div[1]/div[1]/section/a"
+	}
+]

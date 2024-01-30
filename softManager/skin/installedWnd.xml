@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" size="900,626">
+	<Font id="0" name="微软雅黑" size="12" default="true" />
+	<Font id="1" name="微软雅黑" size="16" />
+	<Font id="2" name="微软雅黑" size="18" />
+	<Font id="3" name="微软雅黑" />
+	<Font id="4" name="微软雅黑" size="14" />
+	<Font id="5" name="微软雅黑" size="24" />
+	<Font id="6" name="微软雅黑" size="48" />
+	<VerticalLayout width="900" height="626" bkcolor="0xFFFFFFFF" bordersize="1" bordercolor="0xFF000000" borderround="5,5">
+		<!--标题-->
+		<HorizontalLayout name="caption" padding="1,1,1,0" height="40" bkcolor="0xFFEEEEEE">
+			<Control />
+			<Button name="closebtn" width="39" height="20" tooltip="关闭" normalimage="file='images\btn_close_normal.png'" hotimage="file='images\btn_close_highlight.png'" pushedimage="file='images\btn_close_down.png' "/>
+		</HorizontalLayout>
+						
+		<HorizontalLayout height="24" padding="10,10,20,10">
+			<Control />
+			<Edit name="search_edit" width="180" bordersize="1" borderround="5,5" bordercolor="#8ed28a" />
+			<Button name="search_btn" width="60" padding="10" bordersize="1" borderround="5,5" bordercolor="#8ed28a" text="搜索" align="center" />
+		</HorizontalLayout>
+				
+		<List name="soft_list_v2" padding="20,20,20,20" itemlinecolor="FFB8BDC6" vscrollbar="true">
+			<ListHeader>
+				<ListHeaderItem text="序号" width="80" />
+				<ListHeaderItem text="软件名称" />
+				<ListHeaderItem text="位数" width="60" />
+				<ListHeaderItem text="本机版本" width="120" />
+				<ListHeaderItem text="大小" width="80" />
+				<ListHeaderItem text="操作" width="160" />
+			</ListHeader>
+		</List>
+	</VerticalLayout>
+</Window>

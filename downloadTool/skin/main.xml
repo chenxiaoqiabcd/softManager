@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" size="500,300">
+	<Font id="0" name="微软雅黑" size="12" default="true" />
+	<Font id="1" name="微软雅黑" size="16" />
+	<Font id="2" name="微软雅黑" size="18" />
+	<Font id="3" name="微软雅黑" />
+	<Font id="4" name="微软雅黑" size="14" />
+	<Font id="5" name="微软雅黑" size="24" />
+	<Font id="6" name="微软雅黑" size="48" />
+	<VerticalLayout width="500" height="300" bkcolor="0xFF191919" bordersize="1" bordercolor="0xFF5e5e5e">
+		<!--标题-->
+		<HorizontalLayout name="caption" padding="1,1,1,0" height="40" bkcolor="0xFF202020">
+			<Label name="soft_name_label" padding="8" font="1" />
+			<Control />
+			<Button name="minbtn" width="28" height="20" padding="0,10" tooltip="最小化" text="一" textcolor="0xFFf2fbec" cursor="hand" />
+			<Button name="closebtn" width="39" height="20" padding="0,10" tooltip="关闭" text="×" textcolor="0xFFf2fbec" cursor="hand" />
+		</HorizontalLayout>
+		<HorizontalLayout height="30" padding="20,20,20">
+			<Control />
+			<Button name="btn_add_task" width="30" text="+" bordersize="1" bordercolor="0xFF7d7d7d" textcolor="0xFFf2fbec" />
+		</HorizontalLayout>
+		<List padding="20,20,20,20" bordersize="1" bordercolor="0xFF7d7d7d">
+			<ListHeader>
+				<ListHeaderItem text="编号" textcolor="0xFFf2fbec" width="80" />
+				<Control width="1" bkcolor="0xFF5e5e5e" />
+				<ListHeaderItem text="下载链接" textcolor="0xFFf2fbec" />
+				<Control width="1" bkcolor="0xFF5e5e5e" />
+				<ListHeaderItem text="下载位置" textcolor="0xFFf2fbec" />
+			</ListHeader>
+		</List>
+	</VerticalLayout>
+</Window>

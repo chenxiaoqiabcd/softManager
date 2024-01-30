@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" size="500,200">
+	<Font id="0" name="微软雅黑" size="12" default="true" />
+	<Font id="1" name="微软雅黑" size="16" />
+	<Font id="2" name="微软雅黑" size="18" />
+	<Font id="3" name="微软雅黑" />
+	<Font id="4" name="微软雅黑" size="14" />
+	<Font id="5" name="微软雅黑" size="24" />
+	<Font id="6" name="微软雅黑" size="48" />
+	<VerticalLayout width="500" height="200" bkcolor="0xFFFFFFFF" bordersize="1" bordercolor="0xFF000000" borderround="5,5">
+		<!--标题-->
+		<HorizontalLayout name="caption" padding="1,1,1,0" height="40" bkcolor="0xFFEEEEEE">
+			<Control />
+			<Button name="closebtn" width="39" height="20" tooltip="关闭" normalimage="file='images\btn_close_normal.png'" hotimage="file='images\btn_close_highlight.png'" pushedimage="file='images\btn_close_down.png' " />
+		</HorizontalLayout>
+		<VerticalLayout height="32" padding="20,20,20">
+			<Label name="label_download" text="下载进度" height="18" />
+			<Progress name="download_progress" height="6" padding="0,8" bkcolor="0xFF999999" foreimage="images\fore_image.png" />
+		</VerticalLayout>
+		<TileLayout name="mul_thread_download_layout" padding="20,20,20,20" />
+	</VerticalLayout>
+</Window>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" size="500,300">
+	<Font id="0" name="微软雅黑" size="12" default="true" />
+	<Font id="1" name="微软雅黑" size="16" />
+	<Font id="2" name="微软雅黑" size="18" />
+	<Font id="3" name="微软雅黑" />
+	<Font id="4" name="微软雅黑" size="14" />
+	<Font id="5" name="微软雅黑" size="24" />
+	<Font id="6" name="微软雅黑" size="48" />
+	<VerticalLayout width="500" height="300" bkcolor="0xFFFFFFFF" bordersize="1" bordercolor="0xFF000000" borderround="5,5">
+		<!--标题-->
+		<HorizontalLayout name="caption" padding="1,1,1,0" height="40" bkcolor="0xFFEEEEEE">
+      <Label name="soft_name_label" padding="8" font="1" />
+			<Control />
+      <Button name="btn_menu" width="24" height="24" padding="0,8" text="三" cursor="hand" />
+			<Button name="minbtn" width="24" height="24" padding="6,8" text="一" cursor="hand" />
+			<Button name="closebtn" width="24" height="24" padding="6,8,6" text="X" cursor="hand" />
+		</HorizontalLayout>
+		<Control />
+		<HorizontalLayout height="200">
+			<Control />
+			<Button name="soft_installed_btn" font="6" textcolor="0xFF00DD00" width="200" padding="10,10,10,10" bkcolor="0xFFEEEEEE" borderround="10,10" cursor="hand" />
+			<Control />
+			<HorizontalLayout width="200" padding="10,10,10,10">
+				<Button name="soft_updater_btn" font="6" textcolor="0xFF00DD00" bkimage="file='images\new.png' dest='0,0,80,80'" bkcolor="0xFFEEEEEE" borderround="10,10" cursor="hand" />
+				<Label name="label_update_desc" float="true" pos="30,120,170,152" align="center" bkcolor="0x99999999" visible="false" />
+			</HorizontalLayout>
+			<Control />
+		</HorizontalLayout>
+		<Control />
+		<HorizontalLayout height="40" bkcolor="">
+			<Label name="label_status" padding="1,1,1,1" height="40" textpadding="5,2,5,2" />
+			<!-- <wkeWebKit name="wke" width="100" height="100" /> -->
+		</HorizontalLayout>
+	</VerticalLayout>
+</Window>

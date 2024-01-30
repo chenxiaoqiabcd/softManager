@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window caption="0,0,0,40" size="1100,700" bktrans="true">
+	<VerticalLayout>
+		<wkeWebKit width="1100" height="700" name="wke" />
+	</VerticalLayout>
+</Window>

@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 3.17)
+
+add_link_options(/IGNORE:4099)
+
+project(softManager)
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi /Zc:threadSafeInit-")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Zi /Zc:threadSafeInit-")
+
+# 为release添加pdb输出文件
+# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+
+# set up options for debugging under the release
+IF(NOT DEFINED ENV{CI_PIPELINE_IID})
+	ADD_DEFINITIONS( /Zi )
+	ADD_DEFINITIONS( /Od )
+
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
+	set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
+ENDIF()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_definitions(-DUNICODE)
+add_definitions(-D_UNICODE)
+add_definitions(-DUILIB_STATIC)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-DUILIB_EXPORTS)
+add_definitions(-DBUILDING_LIBCURL)
+add_definitions(-DHTTP_ONLY)
+
+IF(DEFINED ENV{CI_PIPELINE_IID})
+	SET(BUILD_VERSION $ENV{CI_PIPELINE_IID})
+ELSE()
+	SET(BUILD_VERSION 0)
+ENDIF()
+
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/DuiLib)
+
+add_subdirectory(softManager)
+
+add_subdirectory(downloadTool)
