@@ -66,6 +66,7 @@ std::wstring FileHelper::GetIconWithExePath(const wchar_t* szFile) {
 	 	auto unique_name = Helper::MakeUniqueName(temp_path.c_str());
 
 		if (SaveIconToFile(hIcon, unique_name.c_str())) {
+			MoveFileEx(unique_name.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
 			return unique_name;
 		}
 	}
@@ -93,6 +94,7 @@ std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
 		return L"";
 	}
 
+	MoveFileEx(bitmap_path.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
 	return bitmap_path;
 }
 

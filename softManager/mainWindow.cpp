@@ -93,7 +93,8 @@ void CMainWindow::Init()
 {
 	UpdateInstance->GetDataCenter()->Attach(this);
 
-	EventQueueInstance->AppendCurrentThreadListener(EVENT_UPDATE_STATUS_LABEL, OnEventUpdateStatusLabel, this);
+	EventQueueInstance->AppendCurrentThreadListener(EVENT_UPDATE_STATUS_LABEL,
+													OnEventUpdateStatusLabel, this);
 	EventQueueInstance->AppendNewThreadListener(EVENT_UPDATE_SOFT_LIST,
 												OnEventUpdateSoftList, this);
 

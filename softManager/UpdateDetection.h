@@ -59,9 +59,7 @@ private:
 	std::vector<std::map<std::wstring, std::wstring>> ParseActions(const jsoncons::json& root);
 
 	inline static std::vector<UpdateInfo> update_info_data_;
-
-	size_t need_update_count_ = 0;	// 需要更新的数量
-	
+		
 	std::vector<RemoteConfigInfo> remote_config_info_vec_;
 
 	std::shared_ptr<DataCenter> center_;

@@ -39,7 +39,7 @@ void CGlobalUpdateManager::Run(const std::vector<SoftInfo>& soft_infos) {
 }
 
 std::optional<UpdateInfo> CGlobalUpdateManager::MatchName(std::string_view name) {
-	auto findUpdateData = [=](const UpdateInfo& info) {
+	auto findUpdateData = [name](const UpdateInfo& info) {
 		return CStringHelper::IsMatch(name.data(), info.name);
 	};
 

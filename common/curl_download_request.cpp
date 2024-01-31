@@ -136,7 +136,7 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 
 		double file_length = 0.0;
 		curl_easy_getinfo(curl_guard.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD, &file_length);
-		KF_INFO("success get file length: %0.lf", file_length);
+		KF_INFO("success get file length: %s", Helper::ToStringSize(file_length).c_str());
 		return file_length;
 	}
 

@@ -70,7 +70,7 @@ protected:
 
 	CString GetIcon(CString soft_name, CString install_path);
 
-	bool CheckData(HKEY key, std::wstring_view szKeyName, SoftInfo* info);
+	bool CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info);
 
 	void PushData(HKEY key, DWORD ulOptions, SoftInfo* soft_info);
 

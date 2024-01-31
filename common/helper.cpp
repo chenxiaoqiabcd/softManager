@@ -5,6 +5,7 @@
 #include <Shlwapi.h>
 #include <tchar.h>
 #include <atlcomcli.h>
+#include <filesystem>
 
 #include "event_queue_global_manager.h"
 #include "stringHelper.h"
@@ -63,7 +64,7 @@ unsigned long Helper::GetDirectorySize(const wchar_t* szDir) {
 
 	WIN32_FIND_DATA wfd;
 
-	HANDLE hFind = FindFirstFile(szFindDirectory, &wfd);
+	const HANDLE hFind = FindFirstFile(szFindDirectory, &wfd);
 
 	if(hFind == INVALID_HANDLE_VALUE) {
 		return llSize;
@@ -80,10 +81,10 @@ unsigned long Helper::GetDirectorySize(const wchar_t* szDir) {
 			PathAppend(szNewPath, wfd.cFileName);
 
 			llSize += GetDirectorySize(szNewPath);
+			continue;
 		}
-		else {
-			llSize += wfd.nFileSizeLow;
-		}
+
+		llSize += wfd.nFileSizeLow;
 	} while (FindNextFile(hFind, &wfd));
 
 	FindClose(hFind);

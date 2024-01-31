@@ -4,8 +4,8 @@
 #include "softInfo.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <Msi.h>
-#include <jsoncons/config/version.hpp>
 
 #include "event_queue_global_manager.h"
 #include "file_helper.h"
@@ -20,11 +20,11 @@ CSoftInfo::CSoftInfo() {
 std::vector<SoftInfo> CSoftInfo::GetSoftInfo(void)
 {
 	if(m_SoftInfoArr.empty() && mtx_.try_lock()) {
-		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_32KEY);
 		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_64KEY);
+		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_32KEY);
 
-		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_32KEY);
 		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_64KEY);
+		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_32KEY);
 
 		mtx_.unlock();
 	}
@@ -37,11 +37,11 @@ void CSoftInfo::UpdateSoftInfo() {
 		m_SoftInfoArr.clear();
 		m_SystemPatchesArr.clear();
 
-		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_32KEY);
 		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_64KEY);
+		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_32KEY);
 
-		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_32KEY);
 		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_64KEY);
+		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_32KEY);
 
 		mtx_.unlock();
 	}
@@ -198,12 +198,12 @@ DWORD GetSize(const CString& install_path, const CString& uninstall_path) {
 	return 0;
 }
 
-bool CSoftInfo::CheckData(HKEY key, std::wstring_view szKeyName, SoftInfo* info) {
+bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
 	info->m_strSoftName = Helper::RegisterQueryValue(key, L"DisplayName").c_str();
 	info->m_strInstallLocation = Helper::RegisterQueryValue(key, L"InstallLocation").c_str();
 	info->m_strUninstallPth = Helper::RegisterQueryValue(key, L"UninstallString").c_str();
 	info->m_strSoftVersion = Helper::RegisterQueryValue(key, L"DisplayVersion").c_str();
-	info->key_name = szKeyName.data();
+	info->key_name = szKeyName;
 
 	if (-1 != info->key_name.Find(L"KB") && -1 != info->key_name.Find(L"{")) {
 		m_SystemPatchesArr.push_back(*info);
@@ -217,7 +217,7 @@ bool CSoftInfo::CheckData(HKEY key, std::wstring_view szKeyName, SoftInfo* info)
 
 	if (StrStrIW(info->m_strInstallLocation, L"ProgramData") ||
 		StrStrIW(info->m_strUninstallPth, L"ProgramData")) {
-		// KF_WARN(L"programdata目录下的软件 %s", soft_info->m_strSoftName.GetString());
+		KF_WARN(L"programdata目录下的软件 %s", info->m_strSoftName.GetString());
 		return false;
 	}
 
@@ -235,18 +235,23 @@ bool CSoftInfo::CheckData(HKEY key, std::wstring_view szKeyName, SoftInfo* info)
 	}
 
 	auto FindSoftInfo = [szKeyName](const SoftInfo& info) {
-		return info.key_name == szKeyName.data();
+		return info.key_name == szKeyName;
 	};
 
-	// 如果32位找到了，就不初始化64位数据了
-	// 数据源 WinMerge
-	// 原因：软件更新后仅更新了32位的注册表
+	// 过滤重复的软件
 	if (std::any_of(m_SoftInfoArr.begin(), m_SoftInfoArr.end(), FindSoftInfo)) {
-		KF_WARN(L"已经在32位注册表找到的软件 %s", info->m_strSoftName);
+		KF_WARN(L"已经在注册表找到的软件 %s", info->m_strSoftName);
 		return false;
 	}
 
-	if (info->m_strSoftName.IsEmpty() || 0 == GetSize(info->m_strInstallLocation, info->m_strUninstallPth)) {
+	if (info->m_strSoftName.IsEmpty()) {
+		KF_WARN(L"版本号为空的软件 %s", info->m_strSoftName);
+		return false;
+	}
+
+	if (0 == GetSize(info->m_strInstallLocation, info->m_strUninstallPth)) {
+		KF_WARN(L"找不到安装目录的软件 %s %s %s",
+				info->m_strSoftName, info->m_strInstallLocation, info->m_strUninstallPth);
 		return false;
 	}
 
@@ -293,7 +298,7 @@ void CSoftInfo::AddSoftInfo(HKEY root_key, std::wstring_view lpSubKey, std::wstr
 	}
 
 	SoftInfo soft_info;
-	if(!CheckData(hkRKey, szKeyName, &soft_info)) {
+	if(!CheckData(hkRKey, szKeyName.data(), &soft_info)) {
 		return;
 	}
 

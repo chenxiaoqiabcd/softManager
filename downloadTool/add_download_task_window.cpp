@@ -35,7 +35,7 @@ void AddDownloadTaskWindow::NotifyClickOk(DuiLib::TNotifyUI& msg) {
 
 		m_pm.FindControl(L"download_info_layout")->SetVisible(true);
 
-		m_pm.FindControl(L"edit_size")->SetText(CStringHelper::a2w(Helper::ToStringSize(content_length)).c_str());
+		m_pm.FindControl(L"edit_size")->SetText(Helper::ToWStringSize(content_length).c_str());
 
 		ResizeClient(800, 210);
 	});
