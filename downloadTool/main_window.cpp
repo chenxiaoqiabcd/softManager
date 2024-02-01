@@ -213,5 +213,5 @@ bool MainWindow::DownloadTask(const char* url, const wchar_t* dest_folder) {
 		return true;
 	}
 
-	return download_request_->DownloadSingleThreadFile(file_path, OnProgressSingleThreadCallback, this);
+	return download_request_->DownloadSingleThreadFile(file_path/*, OnProgressSingleThreadCallback, this*/);
 }

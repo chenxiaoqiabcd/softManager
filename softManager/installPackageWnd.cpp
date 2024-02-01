@@ -118,14 +118,7 @@ int CInstallPackageWnd::OnProgressMultipleThreadCallback(void* ptr, double now_d
 		if (nullptr != progress) {
 			const auto value = now_download_size * 100.0 / total_download_size;
 
-			if(value == 100) {
-				if(progress->GetValue() > 50) {
-					progress->SetValue(static_cast<int>(value));
-				}
-			}
-			else {
-				progress->SetValue(static_cast<int>(value));
-			}
+			progress->SetValue(static_cast<int>(value));
 
 			const auto tooltip = KfString::Format("index: %d, now: %s, total: %s, rate: %0.2lf", index,
 												  Helper::ToStringSize(now_download_size).c_str(),
@@ -154,43 +147,24 @@ int CInstallPackageWnd::OnProgressMultipleThreadCallback(void* ptr, double now_d
 }
 
 int CInstallPackageWnd::OnProgressSingleThreadCallback(void* ptr, double total_to_download,
-													   double now_downloaded, double, double) {
-	auto pThis = static_cast<CInstallPackageWnd*>(ptr);
+													   double now_downloaded, double speed) {
+	const auto pThis = static_cast<CInstallPackageWnd*>(ptr);
 
-	if (pThis->download_request_->IsStop()) {
-		return -1;
-	}
+	const double value = now_downloaded * 100.0 / total_to_download;
 
-	if (0.1 > now_downloaded) {
+	const auto progress = static_cast<DuiLib::CProgressUI*>(pThis->m_pm.FindControl(L"download_progress"));
+	if (nullptr == progress) {
 		return 0;
 	}
 
-	if (IsWindow(pThis->m_hWnd)) {
-		static DWORD start_time = GetTickCount();
-		static long long start_size = 0;
-		static long long sub_size = 0;
+	progress->SetValue(value);
 
-		const auto now = GetTickCount();
-		if (now - start_time >= 1000) {
-			sub_size = now_downloaded - start_size;
-			start_size = now_downloaded;
-			start_time = now;
-		}
+	const auto text = KfString::Format("下载进度:%0.2lf%%(%s/%s) %s/s", value,
+									   Helper::ToStringSize(now_downloaded).c_str(),
+									   Helper::ToStringSize(total_to_download).c_str(),
+									   Helper::ToStringSize(speed).c_str());
 
-		double value = now_downloaded * 100.0 / total_to_download;
-
-		auto progress = static_cast<DuiLib::CProgressUI*>(pThis->m_pm.FindControl(L"download_progress"));
-		if (nullptr != progress) {
-			progress->SetValue(value);
-
-			auto text = KfString::Format("下载进度:%0.2lf%%(%s/%s) %s/s", value,
-										 Helper::ToStringSize(now_downloaded).c_str(),
-										 Helper::ToStringSize(total_to_download).c_str(),
-										 Helper::ToStringSize(sub_size).c_str());
-
-			pThis->m_pm.FindControl(L"label_download")->SetText(text.GetWString().c_str());
-		}
-	}
+	pThis->m_pm.FindControl(L"label_download")->SetText(text.GetWString().c_str());
 
 	return 0;
 }
@@ -216,13 +190,15 @@ bool CInstallPackageWnd::DownLoad(std::string_view url, std::wstring_view temp_p
 
 	download_request_->SetDownloadFinishedCallback(OnFinishedCallback, this);
 
-	if(accept_ranges && file_length > 0) {
-		// 切片下载必须取到总大小
+	// 大于100M的文件才切片下载
+	if(accept_ranges && file_length > 1024 * 1024 * 100) {
 		return DownloadMultiThread(file_path, file_length);
 	}
 
 	// 单线程下载只要可以正常访问就行
-	return download_request_->DownloadSingleThreadFile(file_path, OnProgressSingleThreadCallback, this);
+	download_request_->SetDownloadSingleProgressCallback(OnProgressSingleThreadCallback, this);
+
+	return download_request_->DownloadSingleThreadFile(file_path);
 }
 
 bool CInstallPackageWnd::DownloadMultiThread(std::wstring_view file_path, double file_length) {

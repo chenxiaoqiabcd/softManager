@@ -30,7 +30,7 @@ protected:
 												long long total_download_size);
 
 	static int OnProgressSingleThreadCallback(void* ptr, double total_to_download, double now_downloaded,
-											  double, double);
+											  double speed);
 private:
 	bool DownLoad(std::string_view url, std::wstring_view temp_path);
 

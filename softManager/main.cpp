@@ -31,6 +31,8 @@ int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 
 	DeleteFile(bak_path);
 
+	curl_global_init(CURL_GLOBAL_ALL);
+
 	MemoryPool::GetInstance()->Init(30);
 
 	Helper::CreateDesktopIcon(L"软件升级管理");
@@ -47,6 +49,8 @@ int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 	catch(std::exception& e) {
 		KF_ERROR("%s", e.what());
 	}
+
+	curl_global_cleanup();
 
 	return 0;
 }

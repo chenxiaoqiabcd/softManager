@@ -217,7 +217,7 @@ bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
 
 	if (StrStrIW(info->m_strInstallLocation, L"ProgramData") ||
 		StrStrIW(info->m_strUninstallPth, L"ProgramData")) {
-		KF_WARN(L"programdata目录下的软件 %s", info->m_strSoftName.GetString());
+		// KF_WARN(L"programdata目录下的软件 %s", info->m_strSoftName.GetString());
 		return false;
 	}
 
@@ -230,7 +230,7 @@ bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
 
 	const auto it_find = std::find_if(m_SoftInfoArr.begin(), m_SoftInfoArr.end(), FindNewerSoftInfo);
 	if (it_find != m_SoftInfoArr.end()) {
-		KF_WARN(L"找到了更大版本的注册表位置 %s", it_find->m_strSoftName.GetString());
+		// KF_WARN(L"找到了更大版本的注册表位置 %s", it_find->m_strSoftName.GetString());
 		m_SoftInfoArr.erase(it_find);
 	}
 
@@ -240,18 +240,18 @@ bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
 
 	// 过滤重复的软件
 	if (std::any_of(m_SoftInfoArr.begin(), m_SoftInfoArr.end(), FindSoftInfo)) {
-		KF_WARN(L"已经在注册表找到的软件 %s", info->m_strSoftName);
+		// KF_WARN(L"已经在注册表找到的软件 %s", info->m_strSoftName);
 		return false;
 	}
 
 	if (info->m_strSoftName.IsEmpty()) {
-		KF_WARN(L"版本号为空的软件 %s", info->m_strSoftName);
+		// KF_WARN(L"版本号为空的软件 %s %s", info->key_name, info->m_strSoftName);
 		return false;
 	}
 
 	if (0 == GetSize(info->m_strInstallLocation, info->m_strUninstallPth)) {
-		KF_WARN(L"找不到安装目录的软件 %s %s %s",
-				info->m_strSoftName, info->m_strInstallLocation, info->m_strUninstallPth);
+		// KF_WARN(L"找不到安装目录的软件 %s %s %s",
+		// 		info->m_strSoftName, info->m_strInstallLocation, info->m_strUninstallPth);
 		return false;
 	}
 
@@ -275,7 +275,7 @@ void CSoftInfo::PushData(HKEY key, DWORD ulOptions, SoftInfo* soft_info) {
 	}
 
 	if (soft_info->m_strSoftVersion.IsEmpty() || soft_info->m_strSoftVersion == L"1") {
-		KF_WARN(L"版本号为空的软件 %s", soft_info->m_strSoftName);
+		// KF_WARN(L"版本号为空的软件 %s %s", soft_info->key_name, soft_info->m_strSoftName);
 		return;
 	}
 

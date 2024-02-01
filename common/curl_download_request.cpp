@@ -26,6 +26,11 @@ void CurlDownloadRequest::SetDownloadProgressCallback(const ptrDownloadProgressF
 	download_progress_callback_data_ = data;
 }
 
+void CurlDownloadRequest::SetDownloadSingleProgressCallback(const ptrDownloadProgressSingleThreadFunction& callback, void* data) {
+	download_progress_single_thread_callback_ = callback;
+	download_progress_single_thread_callback_data_ = data;
+}
+
 void CurlDownloadRequest::SetDownloadFinishedCallback(const ptrDownloadFinishedCallback& callback,
 													  void* data) {
 	download_finished_callback_ = callback;
@@ -108,7 +113,7 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 	}
 
 	// 如果在5秒内低于1字节/秒，则终止
-	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_TIME, 5L);
+	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_TIME, 30L);
 	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_LIMIT, 1L);
 
 	curl_easy_setopt(curl_guard.get(), CURLOPT_SSL_VERIFYPEER, 0);
@@ -242,9 +247,7 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 	return download_result_code_;
 }
 
-bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_path,
-												   const ptrDownloadProgressSingleThreadFunction& progress_callback,
-												   void* user_data) {
+bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_path) {
 	// 重置状态值
 	stop_download_ = false;
 	download_result_code_ = CURLE_OK;
@@ -260,31 +263,35 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 		return false;
 	}
 
-	auto curl = curl_easy_init();
+	single_curl_ = curl_easy_init();
 
-	curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
+	curl_easy_setopt(single_curl_, CURLOPT_URL, url_.c_str());
 
 	// 如果在5秒内低于1字节/秒，则终止
-	curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 60L);
-	curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 30L);
+	curl_easy_setopt(single_curl_, CURLOPT_LOW_SPEED_TIME, 60L);
+	curl_easy_setopt(single_curl_, CURLOPT_LOW_SPEED_LIMIT, 30L);
 
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+	curl_easy_setopt(single_curl_, CURLOPT_SSL_VERIFYPEER, 0);
+	curl_easy_setopt(single_curl_, CURLOPT_SSL_VERIFYHOST, 0);
 
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(single_curl_, CURLOPT_FOLLOWLOCATION, 1L);
 
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteSingleThreadDownloadFunction);
+	curl_easy_setopt(single_curl_, CURLOPT_WRITEDATA, file);
+	curl_easy_setopt(single_curl_, CURLOPT_WRITEFUNCTION, WriteSingleThreadDownloadFunction);
 
-	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-	curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, user_data);
-	curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
+	curl_easy_setopt(single_curl_, CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(single_curl_, CURLOPT_PROGRESSDATA, this);
+	curl_easy_setopt(single_curl_, CURLOPT_PROGRESSFUNCTION, SingleProcessProgressFunction);
 
-	const auto code = curl_easy_perform(curl);
+	const auto code = curl_easy_perform(single_curl_);
 
 	std::ignore = fclose(file);
 
-	curl_easy_cleanup(curl);
+	if(stop_download_) {
+		return false;
+	}
+
+	curl_easy_cleanup(single_curl_);
 
 	if (CURLE_OK == code) {
 		if (nullptr != download_finished_callback_) {
@@ -392,6 +399,30 @@ int CurlDownloadRequest::ProgressFunction(void* ptr, double total_to_download, d
 		}
 
 		mtx.unlock();
+	}
+
+	return result;
+}
+
+int CurlDownloadRequest::SingleProcessProgressFunction(void* ptr, double total_to_download,
+													   double now_downloaded, double total_to_upload,
+													   double now_uploaded) {
+	int result = 0;
+
+	if(stop_download_) {
+		return -1;
+	}
+
+	if(total_to_download > 0 && now_downloaded > 0) {
+		const auto pThis = static_cast<CurlDownloadRequest*>(ptr);
+
+		double speed;
+		curl_easy_getinfo(pThis->single_curl_, CURLINFO_SPEED_DOWNLOAD, &speed);
+
+		if(nullptr != pThis->download_progress_single_thread_callback_) {
+			result = pThis->download_progress_single_thread_callback_(pThis->download_progress_single_thread_callback_data_,
+																	  total_to_download, now_downloaded, speed);
+		} 
 	}
 
 	return result;
