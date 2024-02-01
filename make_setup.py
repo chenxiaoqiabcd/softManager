@@ -35,7 +35,7 @@ def connect():
     return ssh
 
 if __name__ == "__main__":
-    last_version = os.getenv("GITHUB_RUN_ID", "0")
+    last_version = os.getenv("CI_PIPELINE_IID", "0")
 
     os.system("update_softManager_skin.bat")
     os.system("update_downladTool_skin.bat")

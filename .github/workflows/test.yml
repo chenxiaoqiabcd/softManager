@@ -19,4 +19,6 @@ jobs:
       run: echo ${{github.run_id}}-${{github.run_number}}
       
     - name: build
-      run: python make_setup.py
+      run: |
+        set CI_PIPELINE_IID=${{github.run_number}}
+        python make_setup.py
