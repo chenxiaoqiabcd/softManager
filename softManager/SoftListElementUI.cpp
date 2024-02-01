@@ -36,6 +36,10 @@ void CSoftListElementUI::SetBit(char bit) {
 	bit_ = bit;
 }
 
+void CSoftListElementUI::SetKeyName(const wchar_t* key_name) {
+	key_name_ = key_name;
+}
+
 uint8_t CSoftListElementUI::GetBit() const {
 	return bit_;
 }
@@ -107,7 +111,7 @@ void CSoftListElementUI::NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg) const
 	wnd.Create(m_pManager->GetPaintWindow(), L"", UI_WNDSTYLE_DIALOG, WS_EX_WINDOWEDGE);
 	wnd.CenterWindow();
 	if (IDOK == wnd.ShowModal()) {
-		EventQueueInstance->SendEvent(EVENT_UPDATE_SOFT_DATA);
+		EventQueueInstance->SendEvent(EVENT_UPDATE_SOFT_DATA, reinterpret_cast<WPARAM>(key_name_.c_str()));
 	}
 }
 
@@ -275,7 +279,7 @@ void CSoftListElementUI::Uninstall(std::wstring_view cmd) {
 		}
 	}
 
-	EventQueueInstance->SendEvent(EVENT_UPDATE_SOFT_DATA);
+	EventQueueInstance->SendEvent(EVENT_UPDATE_SOFT_DATA, reinterpret_cast<WPARAM>(key_name_.c_str()));
 }
 
 

@@ -250,7 +250,9 @@ DWORD CMainWindow::OnEventUpdateSoftData(WPARAM wParam, LPARAM lParam, LPVOID da
 
 	Helper::UpdateStatusLabel(L"正在获取软件列表...");
 
-	CSoftInfo::GetInstance()->UpdateSoftInfo();
+	if(0 != wParam) {
+		CSoftInfo::GetInstance()->UpdateSoftInfo(reinterpret_cast<const wchar_t*>(wParam));
+	}
 
 	auto soft_info = CSoftInfo::GetInstance()->GetSoftInfo();
 

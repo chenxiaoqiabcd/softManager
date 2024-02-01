@@ -189,6 +189,7 @@ CSoftListElementUI* CInstalledWnd::CreateLine(const SoftInfo& soft_info) const {
 	line->SetScheme(scheme_.get());
 	line->SetSoftName(soft_info.m_strSoftName);
 	line->SetBit(soft_info.bit);
+	line->SetKeyName(soft_info.key_name);
 	line->SetIcon(icon.c_str());
 	line->SetLocalVersion(soft_info.m_strSoftVersion);
 	line->SetUninstallPath(soft_info.m_strUninstallPth);

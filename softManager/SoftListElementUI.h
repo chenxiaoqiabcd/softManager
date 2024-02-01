@@ -22,6 +22,8 @@ public:
 
 	void SetBit(char bit);
 
+	void SetKeyName(const wchar_t* key_name);
+
 	uint8_t GetBit() const;
 
 	void SetUninstallPath(const wchar_t* value);
@@ -81,6 +83,8 @@ private:
 	DuiLib::CButtonUI* btn_update_;
 
 	std::vector<std::map<std::wstring, std::wstring>> actions_;
+
+	std::wstring key_name_;
 
 	bool cracked_ = false;
 

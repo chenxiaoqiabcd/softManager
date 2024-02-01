@@ -57,26 +57,25 @@ void CInstallPackageWnd::OnFinishedCallback(void* ptr, std::wstring_view file_pa
 
 	if(StrStrIW(file_path.data(), L".exe") || StrStrIW(file_path.data(), L".msi")) {
 		pThis->m_pm.FindControl(L"label_download")->SetText(L"开始安装");
+		Helper::ExecuteApplication(file_path.data(), L"");
 
-		if (Helper::ExecuteApplication(file_path.data(), L"")) {
-			EventQueueInstance->SendEvent(EVENT_UPDATE_SOFT_DATA);
+		pThis->Close(IDOK);
+		return;
+	}
+
+	for (auto& it : pThis->actions_) {
+		auto name = it[L"name"];
+
+		if (name == L"clipboard") {
+			Helper::UpdateClipboard(CStringHelper::w2a(it[L"text"]));
+
+			pThis->m_pm.FindControl(L"label_download")->SetText(L"解压密码已复制到剪切板");
+
+			std::this_thread::sleep_for(std::chrono::seconds(3));
 		}
 	}
-	else {
-		for (auto& it : pThis->actions_) {
-			auto name = it[L"name"];
 
-			if (name == L"clipboard") {
-				Helper::UpdateClipboard(CStringHelper::w2a(it[L"text"]));
-
-				pThis->m_pm.FindControl(L"label_download")->SetText(L"解压密码已复制到剪切板");
-
-				std::this_thread::sleep_for(std::chrono::seconds(3));
-			}
-		}
-
-		Helper::OpenFolderAndSelectFile(file_path.data());
-	}
+	Helper::OpenFolderAndSelectFile(file_path.data());
 
 	pThis->Close(IDOK);
 }
@@ -190,8 +189,8 @@ bool CInstallPackageWnd::DownLoad(std::string_view url, std::wstring_view temp_p
 
 	download_request_->SetDownloadFinishedCallback(OnFinishedCallback, this);
 
-	// 大于100M的文件才切片下载
-	if(accept_ranges && file_length > 1024 * 1024 * 100) {
+	// 大于20M的文件才切片下载
+	if(accept_ranges && file_length > 1024 * 1024 * 20) {
 		return DownloadMultiThread(file_path, file_length);
 	}
 

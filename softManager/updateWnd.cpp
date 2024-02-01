@@ -89,6 +89,7 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 		line->SetSoftName(soft_it.m_strSoftName);
 		line->SetIcon(icon.c_str());
 		line->SetBit(soft_it.bit);
+		line->SetKeyName(soft_it.key_name);
 		line->SetLocalVersion(soft_it.m_strSoftVersion);
 		line->SetUpdateInfo(info->version, info->url, info->actions,
 							info->type == L"cracked");

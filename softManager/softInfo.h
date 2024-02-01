@@ -47,6 +47,8 @@ public:
 
 	void UpdateSoftInfo();
 
+	void UpdateSoftInfo(const wchar_t* key_name);
+
 	// 获取所有已安装常用软件名
 	void GetSoftName(std::vector<LPCTSTR>& lpszSoftName);
 	// 获取所有已安装常用软件版本号
@@ -78,6 +80,8 @@ protected:
 					 DWORD ulOptions);
 
 	void Init(HKEY root_key, DWORD ulOptions);
+
+	void Init(HKEY root_key, DWORD ulOptions, const wchar_t* key_name);
 private:
 	// 保存已安装常用软件安装信息
 	inline static std::vector<SoftInfo> m_SoftInfoArr;

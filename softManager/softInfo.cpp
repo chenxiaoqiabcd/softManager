@@ -47,6 +47,27 @@ void CSoftInfo::UpdateSoftInfo() {
 	}
 }
 
+void CSoftInfo::UpdateSoftInfo(const wchar_t* key_name) {
+	if (mtx_.try_lock()) {
+		auto find_soft_info = [key_name](const SoftInfo& info) {
+			return info.key_name == key_name;
+		};
+
+		const auto it_find = std::find_if(m_SoftInfoArr.begin(), m_SoftInfoArr.end(), find_soft_info);
+		if (it_find != m_SoftInfoArr.end()) {
+			m_SoftInfoArr.erase(it_find);
+		}
+
+		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_64KEY, key_name);
+		Init(HKEY_LOCAL_MACHINE, KEY_READ | KEY_WOW64_32KEY, key_name);
+
+		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_64KEY, key_name);
+		Init(HKEY_CURRENT_USER, KEY_READ | KEY_WOW64_32KEY, key_name);
+
+		mtx_.unlock();
+	}
+}
+
 void CSoftInfo::GetSoftName(std::vector<LPCTSTR>& lpszSoftName)
 {
 	std::vector<SoftInfo>::iterator iter;
@@ -330,6 +351,40 @@ void CSoftInfo::Init(HKEY root_key, DWORD ulOptions) {
 
 		RegCloseKey(hkResult);
 
+		return;
+	}
+
+	::MessageBox(NULL, _T("打开注册表失败!"), NULL, MB_ICONWARNING);
+}
+
+void CSoftInfo::Init(HKEY root_key, DWORD ulOptions, const wchar_t* key_name) {
+	LPCTSTR lpSubKey;        // 子键名称
+	HKEY hkResult;            // 将要打开键的句柄
+	LONG lReturn;            // 记录读取注册表是否成功
+
+	lpSubKey = _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+
+	lReturn = RegOpenKeyEx(root_key, lpSubKey, 0, ulOptions, &hkResult);
+
+	if (lReturn == ERROR_SUCCESS) {
+		DWORD dwKeyLen = 255;
+		TCHAR szKeyName[255];        // 注册表项名称
+		DWORD index = 0;
+
+		ZeroMemory(szKeyName, sizeof(TCHAR) * 255);
+
+		while (ERROR_NO_MORE_ITEMS != RegEnumKeyEx(hkResult, index++, szKeyName, &dwKeyLen,
+												   nullptr, nullptr, nullptr, nullptr)) {
+			if (0 == wcscmp(szKeyName, key_name)) {
+				AddSoftInfo(root_key, lpSubKey, szKeyName, ulOptions);
+				break;
+			}
+
+			dwKeyLen = 255;
+			ZeroMemory(szKeyName, sizeof(TCHAR) * 255);
+		}
+
+		RegCloseKey(hkResult);
 		return;
 	}
 

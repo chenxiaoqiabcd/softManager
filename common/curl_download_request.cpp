@@ -194,7 +194,7 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 
 		curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
 
-		// 如果在5秒内低于1字节/秒，则终止
+		// 如果在5秒内低于1个字节/秒，则终止
 		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 5L);
 		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
 
@@ -234,6 +234,10 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 
 	std::ignore = fclose(file);
 
+	if(stop_download_) {
+		return download_result_code_;
+	}
+
 	if(nullptr != download_finished_callback_) {
 		if (download_result_code_ == CURLE_ABORTED_BY_CALLBACK || download_result_code_ == CURLE_BAD_FUNCTION_ARGUMENT) {
 			// 取消下载
@@ -267,7 +271,7 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 
 	curl_easy_setopt(single_curl_, CURLOPT_URL, url_.c_str());
 
-	// 如果在5秒内低于1字节/秒，则终止
+	// 如果在5秒内低于1个字节/秒，则终止
 	curl_easy_setopt(single_curl_, CURLOPT_LOW_SPEED_TIME, 60L);
 	curl_easy_setopt(single_curl_, CURLOPT_LOW_SPEED_LIMIT, 30L);
 
