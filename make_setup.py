@@ -13,7 +13,7 @@ def insertCommitVersion():
 
     url = "https://39.100.95.114:5443/insertCommitVersion"
 
-    request_body = {'version': "1.0.0." + last_version, 'description': commit_log}
+    request_body = {'version': "1.0.1." + last_version, 'description': commit_log}
 
     requests.post(url, json = request_body, verify=False)
 
@@ -35,7 +35,7 @@ def connect():
     return ssh
 
 if __name__ == "__main__":
-    last_version = os.getenv("CI_PIPELINE_IID", "0")
+    last_version = os.getenv("GITHUB_RUN_NUMBER", "0")
 
     os.system("update_softManager_skin.bat")
     os.system("update_downladTool_skin.bat")

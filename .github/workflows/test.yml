@@ -14,9 +14,6 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
-
-    - name: output_github_run_number
-      run: echo ${{github.run_id}}-${{github.run_number}}
       
     - name: build
       run: |
