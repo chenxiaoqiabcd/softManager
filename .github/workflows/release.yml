@@ -25,3 +25,5 @@ jobs:
     - name: release
       run: |
         gh release create $github.ref -target $GITHUB_SHA bin/Release/softManager.exe
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
