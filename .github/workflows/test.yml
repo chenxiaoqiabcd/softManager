@@ -17,5 +17,4 @@ jobs:
       
     - name: build
       run: |
-        set CI_PIPELINE_IID=${{github.run_number}}
         python make_setup.py
