@@ -16,7 +16,9 @@ jobs:
       - uses: actions/checkout@v3
         
       - name: build
-        run: python make_setup.py
+        run: |
+          echo "github ref: ${{ github.ref }}"
+          python make_setup.py
 
   release:
     runs-on: self-hosted
@@ -31,7 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
