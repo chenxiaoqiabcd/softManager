@@ -91,6 +91,7 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 		line->SetBit(soft_it.bit);
 		line->SetKeyName(soft_it.key_name);
 		line->SetLocalVersion(soft_it.m_strSoftVersion);
+		line->SetUninstallPath(soft_it.m_strUninstallPth);
 		line->SetUpdateInfo(info->version, info->url, info->actions,
 							info->type == L"cracked");
 		line->SetFixedHeight(40);

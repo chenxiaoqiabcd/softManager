@@ -188,6 +188,15 @@ CString CSoftInfo::GetIcon(CString soft_name, CString install_path) {
 		ZeroMemory(icon_path, sizeof(wchar_t) * 1024);
 		wcscpy_s(icon_path, install_path);
 		PathAppend(icon_path, L"notepad--.exe");
+	
+		return icon_path;
+	}
+
+	if(StrStrIW(soft_name, L"NeoVim")) {
+		wchar_t icon_path[1024];
+		ZeroMemory(icon_path, sizeof(wchar_t) * 1024);
+		wcscpy_s(icon_path, install_path);
+		PathAppend(icon_path, L"bin\\nvim-qt.exe");
 
 		return icon_path;
 	}
