@@ -98,6 +98,32 @@ std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
 	return bitmap_path;
 }
 
+std::wstring FileHelper::GetIconWithDllPath(const wchar_t* path, int index) {
+	// 判断后缀名是否为dll
+	auto extension = PathFindExtension(path);
+
+	if (0 != _wcsicmp(extension, L".dll") && 0 != _wcsicmp(extension, L".exe")) {
+		return L"";
+	}
+
+	HICON hIcon = ExtractIcon(GetModuleHandle(nullptr), path, index);
+	if (hIcon != nullptr) {
+		KfString file_name(PathFindFileName(path));
+		file_name.Append(".png");
+
+		const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
+
+		auto unique_name = Helper::MakeUniqueName(temp_path.c_str());
+
+		if (SaveIconToFile(hIcon, unique_name.c_str())) {
+			MoveFileEx(unique_name.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
+			return unique_name;
+		}
+	}
+
+	return L"";
+}
+
 std::wstring FileHelper::GetIconWithGuid(const wchar_t* guid) {
 	wchar_t install_dir[MAX_PATH];
 	GetWindowsDirectory(install_dir, MAX_PATH);

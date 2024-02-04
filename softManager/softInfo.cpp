@@ -164,11 +164,10 @@ CString CSoftInfo::GetIcon(HKEY key) {
 	const auto index = icon_path.find(',');
 
 	if (std::string::npos != index) {
-		icon_path = icon_path.substr(0, index);
+		auto dll_path = icon_path.substr(0, index);
+		auto icon_index = std::stoi(icon_path.substr(index + 1));
 
-		if (icon_path[0] == '\"') {
-			icon_path.append(TEXT("\""));
-		}
+		return FileHelper::GetIconWithDllPath(dll_path.c_str(), icon_index).c_str();
 	}
 
 	return FileHelper::GetFilePath(icon_path.c_str()).c_str();

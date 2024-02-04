@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ostream>
+#include <string>
 #include <vector>
 
 class KfString {

@@ -26,6 +26,8 @@ public:
 
 	static std::wstring GetIconWithIcoPath(const wchar_t* path);
 
+	static std::wstring GetIconWithDllPath(const wchar_t* path, int index);
+
 	static std::wstring GetIconWithGuid(const wchar_t* guid);
 
 	static std::wstring GetFilePath(std::wstring_view cmd_line);

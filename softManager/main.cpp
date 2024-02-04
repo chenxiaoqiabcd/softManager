@@ -3,7 +3,6 @@
 
 #include "helper.h"
 #include "kf_log.h"
-#include "kf_str.h"
 #include "mainWindow.h"
 #include "mp.h"
 #include "resource.h"

@@ -4,7 +4,6 @@
 #include "file_helper.h"
 #include "helper.h"
 #include "installPackageWnd.h"
-#include "kf_log.h"
 #include "letter_helper.h"
 #include "scheme.h"
 #include "softInfo.h"
@@ -174,15 +173,21 @@ void CInstalledWnd::UpdateSize(const wchar_t* soft_name, uint8_t bit, const wcha
 CSoftListElementUI* CInstalledWnd::CreateLine(const SoftInfo& soft_info) const {
 	std::wstring icon;
 
-	if (soft_info.key_name[0] == '{') {
+	const auto extension = PathFindExtension(soft_info.m_strSoftIcon);
+	if (0 == wcscmp(extension, L".png")) {
+		icon = soft_info.m_strSoftIcon;
+	}
+
+	if (icon.empty() && soft_info.key_name[0] == '{') {
 		icon = FileHelper::GetIconWithGuid(soft_info.key_name);
 	}
 
-	if (icon.empty()) {
+	if (icon.empty() && 0 == _wcsicmp(extension, L".exe")) {
 		icon = FileHelper::GetIconWithExePath(soft_info.m_strSoftIcon);
 	}
-	else {
-		KF_INFO(L"通过guid定位到的软件图标: %s", soft_info.m_strSoftName);
+
+	if(icon.empty() &&0 == _wcsicmp(extension, L".ico")) {
+		icon = FileHelper::GetIconWithIcoPath(soft_info.m_strSoftIcon);
 	}
 
 	auto line = new CSoftListElementUI;
