@@ -265,6 +265,19 @@ DWORD CMainWindow::OnEventUpdateSoftData(WPARAM wParam, LPARAM lParam, LPVOID da
 		pLabel->SetText(strText);
 	}
 
+	if(0 != wParam) {
+		auto find_soft_info = [wParam](const SoftInfo& info) {
+			return info.key_name == reinterpret_cast<const wchar_t*>(wParam);
+		};
+
+		const auto it_find = std::find_if(soft_info.begin(), soft_info.end(), find_soft_info);
+		if(it_find != soft_info.end()) {
+			UpdateInstance->Run(*it_find);
+		}
+
+		return 0;
+	}
+
 	UpdateInstance->Run(soft_info);
 
 	return 0;

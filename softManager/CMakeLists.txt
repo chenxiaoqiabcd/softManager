@@ -67,9 +67,7 @@ target_link_libraries(softManager
 	optimized ${PROJECT_SOURCE_DIR}/third_party/curl/lib/zlib.lib
 )
 
-IF(NOT DEFINED ENV{CI_PIPELINE_IID})
-	add_custom_command(TARGET softManager POST_BUILD
-		COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
-		COMMENT "editbin successed!!!"
-	)
-ENDIF()
+# add_custom_command(TARGET softManager POST_BUILD
+# 	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
+# 	COMMENT "editbin successed!!!"
+# )

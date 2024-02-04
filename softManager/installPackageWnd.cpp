@@ -177,10 +177,10 @@ bool CInstallPackageWnd::DownLoad(std::string_view url, std::wstring_view temp_p
 	std::string file_name;
 	const auto file_length = download_request_->GetContentLength(&accept_ranges, &file_name);
 
-	if (file_length < 0) {
-		// -1: url访问失败
-		return false;
-	}
+	// if (file_length < 0) {
+	// 	// -1: url访问失败
+	// 	return false;
+	// }
 
 	wchar_t file_path[MAX_PATH];
 	ZeroMemory(file_path, sizeof(wchar_t) * MAX_PATH);
@@ -189,8 +189,8 @@ bool CInstallPackageWnd::DownLoad(std::string_view url, std::wstring_view temp_p
 
 	download_request_->SetDownloadFinishedCallback(OnFinishedCallback, this);
 
-	// 大于20M的文件才切片下载
-	if(accept_ranges && file_length > 1024 * 1024 * 20) {
+	// 大于1M的文件才切片下载
+	if(accept_ranges && file_length > 1024 * 1024) {
 		return DownloadMultiThread(file_path, file_length);
 	}
 

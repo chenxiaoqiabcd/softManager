@@ -24,6 +24,8 @@ protected:
 	void ClearData() override;
 
 	void UpdateDate();
+
+	void RemoveLine(const wchar_t* soft_name) const;
 private:
 	std::vector<std::tuple<KfString, uint8_t>> update_info_vec_;
 };

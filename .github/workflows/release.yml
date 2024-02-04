@@ -32,8 +32,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.0.1.4
-          release_name: Release v1.0.1.4
+          tag_name: v1.0.1.${{github.run_number}}
+          release_name: v1.0.1.${{github.run_number}}
           draft: false
           prerelease: false
 
@@ -42,4 +42,4 @@ jobs:
         with:
           files: bin/Release/softManager.exe
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          release-tag: v1.0.1.4
+          release-tag: v1.0.1.${{github.run_number}}

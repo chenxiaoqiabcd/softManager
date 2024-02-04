@@ -85,6 +85,10 @@ public:
 
 	static KfString Format(const wchar_t* const format, ...);
 
+	static std::wstring FormatList(const wchar_t* format, va_list list);
+
+	static std::string FormatList(const char* format, va_list list);
+
 	size_t Find(const char* filter) const;
 
 	size_t Find(const wchar_t* filter) const;

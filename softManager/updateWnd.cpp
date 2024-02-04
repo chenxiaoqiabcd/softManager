@@ -98,15 +98,18 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 		return line;
 	}
 
+	KF_WARN("请检查远程版本号: 本地版本号(%s)比远程版本号(%s)更大。",
+			CStringHelper::w2a(soft_it.m_strSoftVersion.GetString()).c_str(), info->version.c_str());
 	return nullptr;
 }
 
 void CUpdateWnd::UpdateDate(bool need_update, void* data) {
+	const auto info = static_cast<UpdateInfo*>(data);
+
 	if(!need_update) {
+		RemoveLine(CStringHelper::a2w(info->name).c_str());
 		return;
 	}
-
-	const auto info = static_cast<UpdateInfo*>(data);
 
 	const auto pList = dynamic_cast<DuiLib::CListUI*>(m_pm.FindControl(L"soft_list"));
 
@@ -146,5 +149,21 @@ void CUpdateWnd::UpdateDate() {
 		}
 
 		pList->Add(line);
+	}
+}
+
+void CUpdateWnd::RemoveLine(const wchar_t* soft_name) const {
+	const auto pList = dynamic_cast<DuiLib::CListUI*>(m_pm.FindControl(L"soft_list"));
+
+	for (int i = 0; i < pList->GetCount(); ++i) {
+		const auto line = dynamic_cast<CUpdateListElementUI*>(pList->GetItemAt(i));
+		if (nullptr == line) {
+			continue;
+		}
+
+		if (0 == _wcsicmp(line->GetSoftName(), soft_name)) {
+			pList->RemoveAt(i);
+			break;
+		}
 	}
 }

@@ -22,27 +22,21 @@ void KfLog::Output(const char* type, const char* time, const char* file, const c
 }
 
 void KfLog::Output(uint32_t len, char const* const format, ...) {
-	std::unique_ptr<char> value(new char[len]);
-	memset(value.get(), 0, len);
-
 	va_list list;
 	va_start(list, format);
-	std::ignore = vsnprintf(value.get(), len, format, list);
+	const auto result = KfString::FormatList(format, list);
 	va_end(list);
 
-	std::cout << value << "\n";
+	std::cout << result << "\n";
 }
 
 void KfLog::Output(uint32_t len, const wchar_t* format, ...) {
-	std::unique_ptr<wchar_t> value(new wchar_t[len]);
-	memset(value.get(), 0, len);
-
 	va_list list;
 	va_start(list, format);
-	std::ignore = vswprintf(value.get(), len, format, list);
+	const auto result = KfString::FormatList(format, list);
 	va_end(list);
 
-	std::cout << CStringHelper::w2a(value.get()).c_str() << "\n";
+	std::cout << CStringHelper::w2a(result).c_str() << "\n";
 }
 
 void KfLog::SetInfoTextAttribute() {

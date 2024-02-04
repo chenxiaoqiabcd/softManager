@@ -3,9 +3,11 @@
 #include <Windows.h>
 #include <cassert>
 #include <cstdarg>
+#include <variant>
 
 #include "kf_log.h"
 #include "mp.h"
+#include "stringHelper.h"
 
 #if _MSVC_LANG > 201402L
 #include <stringapiset.h>
@@ -353,27 +355,317 @@ KfString& KfString::Insert(int pos, const KfString& value) {
 }
 
 KfString KfString::Format(const char* const format, ...) {
-	std::unique_ptr<char> value(new char[MAX_PATH]);
-	memset(value.get(), 0, MAX_PATH);
-
 	va_list list;
 	va_start(list, format);
-	vsprintf(value.get(), format, list);
+
+	const auto result = FormatList(format, list);
+
 	va_end(list);
 
-	return KfString(value.get());
+	return KfString(result.c_str());
 }
 
 KfString KfString::Format(const wchar_t* const format, ...) {
-	std::unique_ptr<wchar_t> value(new wchar_t[MAX_PATH]);
-	memset(value.get(), 0, MAX_PATH);
-
 	va_list list;
 	va_start(list, format);
- 	vswprintf(value.get(), format, list);
+
+	const auto result = FormatList(format, list);
+
 	va_end(list);
 
-	return KfString(value.get());
+	return KfString(result.c_str());
+}
+
+std::wstring FormatLength(const wchar_t* length, std::variant<wchar_t*, double, int> value) {
+	return std::visit([length](auto v) -> std::wstring {
+		using T = std::decay_t<decltype(v)>;
+
+		auto f = std::wstring(L"%") + length;
+
+		wchar_t buffer[MAX_PATH];
+		ZeroMemory(buffer, MAX_PATH);
+
+		if constexpr (std::is_same_v<T, wchar_t*>) {
+			f += L"s";
+			std::ignore = wsprintf(buffer, f.c_str(), v);
+		}
+		else if constexpr (std::is_same_v<T, double>) {
+			f += L"lf";
+			char data[MAX_PATH];
+			ZeroMemory(data, MAX_PATH);
+			std::ignore = sprintf_s(data, CStringHelper::w2a(f).c_str(), v);
+			wcscpy_s(buffer, CStringHelper::a2w(data).c_str());
+		}
+		else if constexpr (std::is_same_v<T, int>) {
+			f += L"d";
+			std::ignore = wsprintf(buffer, f.c_str(), v);
+		}
+		else {
+			static_assert(false);
+		}
+
+		return buffer;
+	}, value);
+}
+
+std::wstring KfString::FormatList(const wchar_t* format, va_list list) {
+	std::wstring result;
+
+	int index = 0;
+	std::wstring length;
+
+	while (true) {
+		const auto c = format[index];
+
+		if (c == '\0') {
+			break;
+		}
+
+		if (c == '%') {
+			auto next = format[index + 1];
+
+			length.clear();
+
+			while ((next >= '0' && next <= '9') || next == '.') {
+				length += next;
+				index++;
+				next = format[index + 1];
+			}
+
+			if (next == '%') {
+				result += '%';
+				index++;
+			}
+			else if (next == 'd') {
+				const auto value = va_arg(list, int);
+
+				if (length.empty()) {
+					result += std::to_wstring(value);
+				}
+				else {
+					result += FormatLength(length.c_str(), value);
+				}
+
+				index++;
+			}
+			else if (next == 's') {
+				const auto value = va_arg(list, wchar_t*);
+
+				if (length.empty()) {
+					result += value;
+				}
+				else {
+					result += FormatLength(length.c_str(), value);
+				}
+
+				index++;
+			}
+			else if (next == 'f') {
+				const auto value = va_arg(list, double);
+				result += std::to_wstring(value);
+				index++;
+			}
+			else if (next == 'c') {
+				const auto value = va_arg(list, wchar_t);
+				result += value;
+				index++;
+			}
+			else if (next == 'l') {
+				const auto next2 = format[index + 2];
+
+				if (next2 == 'd') {
+					const auto value = va_arg(list, long);
+					result += std::to_wstring(value);
+					index += 2;
+				}
+				else if (next2 == 'f') {
+					const auto value = va_arg(list, double);
+
+					if (length.empty()) {
+						result += std::to_wstring(value);
+					}
+					else {
+						result += FormatLength(length.c_str(), value);
+					}
+
+					index += 2;
+				}
+				else if (next2 == 'l') {
+					const auto next3 = format[index + 3];
+
+					if (next3 == 'd') {
+						const auto value = va_arg(list, long long);
+						result += std::to_wstring(value);
+						index += 3;
+					}
+					else {
+						assert(false);
+					}
+				}
+				else {
+					assert(false);
+				}
+			}
+			else {
+				assert(false);
+			}
+		}
+		else {
+			result += c;
+		}
+
+		index++;
+	}
+
+	return result;
+}
+
+std::string FormatLength(const char* length, std::variant<char*, double, int> value) {
+	return std::visit([length](auto v) -> std::string {
+		using T = std::decay_t<decltype(v)>;
+
+		auto f = std::string("%") + length;
+
+		char buffer[MAX_PATH];
+		ZeroMemory(buffer, MAX_PATH);
+
+		if constexpr (std::is_same_v<T, char*>) {
+			f += "s";
+			std::ignore = sprintf_s(buffer, MAX_PATH, f.c_str(), v);
+		}
+		else if constexpr (std::is_same_v<T, double>) {
+			f += "lf";
+			std::ignore = sprintf_s(buffer, MAX_PATH, f.c_str(), v);
+		}
+		else if constexpr (std::is_same_v<T, int>) {
+			f += "d";
+			std::ignore = sprintf_s(buffer, MAX_PATH, f.c_str(), v);
+		}
+		else {
+			static_assert(false);
+		}
+
+		return buffer;
+	}, value);
+}
+
+std::string KfString::FormatList(const char* format, va_list list) {
+	std::string result;
+	int index = 0;
+
+	std::string length;
+
+	while (true) {
+		const auto c = format[index];
+
+		if (c == '\0') {
+			break;
+		}
+
+		if (c == '%') {
+			auto next = format[index + 1];
+
+			length.clear();
+
+			while((next >= '0' && next <= '9') || next == '.') {
+				length += next;
+				index++;
+				next = format[index + 1];
+			}
+
+			if (next == '%') {
+				result += '%';
+				index++;
+			}
+			else if (next == 'd') {
+				const auto value = va_arg(list, int);
+
+				if (length.empty()) {
+					result += std::to_string(value);
+				}
+				else {
+					result += FormatLength(length.c_str(), value);
+				}
+
+				index++;
+			}
+			else if (next == 's') {
+				const auto value = va_arg(list, char*);
+
+				if (length.empty()) {
+					result += value;
+				}
+				else {
+					result += FormatLength(length.c_str(), value);
+				}
+
+				index++;
+			}
+			else if (next == 'f') {
+				const auto value = va_arg(list, double);
+
+				if (length.empty()) {
+					result += std::to_string(value);
+				}
+				else {
+					result += FormatLength(length.c_str(), value);
+				}
+
+				index++;
+			}
+			else if (next == 'c') {
+				const auto value = va_arg(list, char);
+				result += value;
+				index++;
+			}
+			else if (next == 'l') {
+				const auto next2 = format[index + 2];
+
+				if (next2 == 'd') {
+					const auto value = va_arg(list, long);
+					result += std::to_string(value);
+					index += 2;
+				}
+				else if (next2 == 'f') {
+					const auto value = va_arg(list, double);
+
+					if(length.empty()) {
+						result += std::to_string(value);
+					}
+					else {
+						result += FormatLength(length.c_str(), value);
+					}
+
+					index += 2;
+				}
+				else if (next2 == 'l') {
+					const auto next3 = format[index + 3];
+
+					if (next3 == 'd') {
+						const auto value = va_arg(list, long long);
+						result += std::to_string(value);
+						index += 3;
+					}
+					else {
+						assert(false);
+					}
+				}
+				else {
+					assert(false);
+				}
+			}
+			else {
+				assert(false);
+			}
+		}
+		else {
+			result += c;
+		}
+
+		index++;
+	}
+
+	return result;
 }
 
 size_t KfString::Find(const char* filter) const {
@@ -644,4 +936,8 @@ void KfStringTest() {
 	assert(hello.Left(3) == "012");
 
 	assert(hello.Replace("3", "e") == "012e45678");
+
+	const auto value = KfString::Format(L"%0.2lf", 5.0 / 8.0);
+
+	assert(value == L"0.62");
 }

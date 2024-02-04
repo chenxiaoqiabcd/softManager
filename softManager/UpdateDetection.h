@@ -45,7 +45,9 @@ public:
 	static CGlobalUpdateManager* GetInstance();
 
 	void Run(const std::vector<SoftInfo>& soft_infos);
-	
+
+	void Run(const SoftInfo& info);
+
 	std::optional<UpdateInfo> MatchName(std::string_view name);
 
 	std::optional<UpdateInfo> MatchName(std::wstring_view name);
@@ -55,6 +57,8 @@ private:
 	void PushUpgradeInfo(UpdateInfo& update_info) const;
 
 	void HandlerRemoteResponse(const char* response_body);
+
+	void HandlerRemoteResponse(const char* response_body, const char* soft_name);
 
 	std::vector<std::map<std::wstring, std::wstring>> ParseActions(const jsoncons::json& root);
 

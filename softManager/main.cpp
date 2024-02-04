@@ -3,6 +3,7 @@
 
 #include "helper.h"
 #include "kf_log.h"
+#include "kf_str.h"
 #include "mainWindow.h"
 #include "mp.h"
 #include "resource.h"
@@ -31,7 +32,7 @@ int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 
 	DeleteFile(bak_path);
 
-	curl_global_init(CURL_GLOBAL_ALL);
+	// curl_global_init(CURL_GLOBAL_ALL);
 
 	MemoryPool::GetInstance()->Init(30);
 
@@ -50,7 +51,7 @@ int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 		KF_ERROR("%s", e.what());
 	}
 
-	curl_global_cleanup();
+	// curl_global_cleanup();
 
 	return 0;
 }
