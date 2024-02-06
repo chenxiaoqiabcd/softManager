@@ -9,7 +9,6 @@
 #include <atlstr.h>
 #include <vector>
 #include <mutex>
-#include <optional>
 
 #include <jsoncons/json.hpp>
 
@@ -74,8 +73,6 @@ public:
 protected:
 	// 获取程序图标
 	CString GetIcon(HKEY key);
-
-	CString GetIcon(CString soft_name, CString install_path);
 
 	SoftInfo GenerateSoftInfo(HKEY key, const wchar_t* key_name, DWORD ulOptions);
 

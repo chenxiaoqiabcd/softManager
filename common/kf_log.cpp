@@ -9,16 +9,16 @@
 #define MAX_LEN MAX_PATH
 
 void KfLog::Output(const char* type, const char* time, const char* file, const char* function, int line) {
- // 	auto err = GetLastError();
-	// if(0 == err) {
-	// 	std::ignore = printf_s("[%s %s]%s:%d %s ", type, time, PathFindFileNameA(file), line, function);
-	// 	return;
-	// }
-	//
-	// std::ignore = printf_s("[%s %s]%s:%d %s last err: %d ",
-	// 					   type, time, PathFindFileNameA(file), line, function, err);
+ 	const auto err = GetLastError();
+	if (0 != err && 0 == strcmp(type, "error")) {
+		std::ignore = printf_s("[%s %s]%s:%d %s last err: %d ",
+							   type, time, PathFindFileNameA(file), line, function, err);
+		return;
+	}
 
 	std::ignore = printf_s("[%s %s]%s:%d %s ", type, time, PathFindFileNameA(file), line, function);
+
+	// std::ignore = printf_s("[%s %s]%s:%d %s ", type, time, PathFindFileNameA(file), line, function);
 }
 
 void KfLog::Output(char const* const format, ...) {

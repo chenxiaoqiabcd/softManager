@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include <gdiplus.h>
+#include <ShlObj.h>
 #include <Shlwapi.h>
 
 #include "helper.h"
@@ -47,36 +48,29 @@ std::streampos FileHelper::GetSize(std::wstring_view file_path) {
 }
 
 std::wstring FileHelper::GetIconWithExePath(const wchar_t* szFile) {
-	// 判断后缀名是否为exe
-	if (0 != _wcsicmp(PathFindExtension(szFile), L".exe")) {
+	const HICON hIcon = ::ExtractIcon(GetModuleHandle(nullptr), szFile, 0);
+	if (hIcon == nullptr) {
 		return L"";
 	}
 
-	if (nullptr == szFile || 0 == wcscmp(szFile, L"")) {
+	KfString file_name(PathFindFileName(szFile));
+	file_name.Append(".png");
+
+	const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
+
+	auto unique_name = Helper::MakeUniqueName(temp_path.c_str());
+
+	if (!SaveIconToFile(hIcon, unique_name.c_str())) {
 		return L"";
 	}
 
-	HICON hIcon = ::ExtractIcon(GetModuleHandle(nullptr), szFile, 0);
-	if (hIcon != nullptr) {
-		KfString file_name(PathFindFileName(szFile));
-		file_name.Append(".png");
-
-		const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
-
-	 	auto unique_name = Helper::MakeUniqueName(temp_path.c_str());
-
-		if (SaveIconToFile(hIcon, unique_name.c_str())) {
-			MoveFileEx(unique_name.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
-			return unique_name;
-		}
-	}
-
-	return L"";
+	MoveFileEx(unique_name.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
+	return unique_name;
 }
 
 std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
-	// 判断后缀名是否为ico
-	if (0 != _wcsicmp(PathFindExtension(path), L".ico")) {
+	const auto icon = LoadIconFile(path);
+	if (nullptr == icon) {
 		return L"";
 	}
 
@@ -85,10 +79,7 @@ std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
 
 	auto bitmap_path = Helper::GetCacheFile(file_name_temp.GetWString().c_str());
 
-	auto icon = LoadIconFile(path);
-	if (nullptr == icon) {
-		return L"";
-	}
+	bitmap_path = Helper::MakeUniqueName(bitmap_path.c_str());
 
 	if (!SaveIconToFile(icon, bitmap_path.c_str())) {
 		return L"";
@@ -138,11 +129,53 @@ std::wstring FileHelper::GetIconWithGuid(const wchar_t* guid) {
 
 	wchar_t program_files_folder[MAX_PATH];
 	ZeroMemory(program_files_folder, MAX_PATH * sizeof(wchar_t));
-	ExpandEnvironmentStrings(L"%programfiles(x86)%", program_files_folder, MAX_PATH);
+	ExpandEnvironmentStrings(L"%programFiles(x86)%", program_files_folder, MAX_PATH);
 	PathAppend(program_files_folder, L"InstallShield Installation Information");
 	PathAppend(program_files_folder, guid);
 
 	result = GetIconWithExeOrIcoFile(program_files_folder);
+
+	if(!result.empty()) {
+		return result;
+	}
+
+	wchar_t cache_folder[MAX_PATH];
+	ZeroMemory(cache_folder, sizeof(cache_folder));
+	SHGetSpecialFolderPath(nullptr, cache_folder, CSIDL_APPDATA, FALSE);
+	PathAppend(cache_folder, L"Microsoft\\Installer");
+	PathAppend(cache_folder, guid);
+
+	return GetIconWithExeOrIcoFile(cache_folder);
+}
+
+std::wstring FileHelper::GetIconWithExeOrIcoFile(const wchar_t* folder) {
+	if (!std::filesystem::is_directory(folder)) {
+		return L"";
+	}
+
+	std::wstring result;
+
+	for (const auto& it : std::filesystem::directory_iterator(folder)) {
+		if (it.is_directory()) {
+			continue;
+		}
+
+		auto extension = it.path().extension();
+
+		if (0 == _wcsicmp(extension.wstring().c_str(), L".exe")) {
+			result = GetIconWithExePath(it.path().c_str());
+			if (!result.empty()) {
+				break;
+			}
+		}
+
+		if (0 == _wcsicmp(extension.wstring().c_str(), L".ico") || !it.path().has_extension()) {
+			result = GetIconWithIcoPath(it.path().c_str());
+			if (!result.empty()) {
+				break;
+			}
+		}
+	}
 
 	return result;
 }
@@ -211,32 +244,6 @@ bool FileHelper::WriteData(const char* file_path, const char* data) {
 	std::ignore = fwrite(data, strlen(data), 1, f);
 	std::ignore = fclose(f);
 	return true;
-}
-
-std::wstring FileHelper::GetIconWithExeOrIcoFile(const wchar_t* folder) {
-	if (!std::filesystem::is_directory(folder)) {
-		return L"";
-	}
-
-	std::wstring result;
-
-	for (const auto& it : std::filesystem::directory_iterator(folder)) {
-		if (it.is_directory()) {
-			continue;
-		}
-
-		result = GetIconWithExePath(it.path().c_str());
-		if (!result.empty()) {
-			break;
-		}
-
-		result = GetIconWithIcoPath(it.path().c_str());
-		if (!result.empty()) {
-			break;
-		}
-	}
-
-	return result;
 }
 
 int FileHelper::GetEncoderClsid(const wchar_t* szFormat, CLSID* pClsid) {

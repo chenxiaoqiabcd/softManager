@@ -86,8 +86,7 @@ DWORD CInstalledWnd::ThreadUpdateSoftSize(LPVOID lParam) {
 	while(!pThis->soft_size_list_.empty()) {
 		auto begin = pThis->soft_size_list_.begin();
 
-		pThis->UpdateSize(std::get<0>(*begin),
-						  std::get<1>(*begin), 
+		pThis->UpdateSize(std::get<0>(*begin), std::get<1>(*begin), 
 						  std::get<2>(*begin), 
 						  std::get<3>(*begin));
 
@@ -187,38 +186,20 @@ void CInstalledWnd::UpdateSize(const wchar_t* soft_name, uint8_t bit, const wcha
 		if (line->GetBit() == bit && CStringHelper::IsMatch(line->GetSoftName().GetData(),
 															soft_name)) {
 			const long long size = GetInstallPathSize(install_path, uninstall_path);
-			line->UpdateSize(CStringHelper::a2w(Helper::ToStringSize(size)).c_str());
+			line->UpdateSize(Helper::ToWStringSize(size).c_str());
 			break;
 		}
 	}
 }
 
 CSoftListElementUI* CInstalledWnd::CreateLine(const SoftInfo& soft_info) const {
-	std::wstring icon;
-
-	const auto extension = PathFindExtension(soft_info.m_strSoftIcon);
-	if (0 == wcscmp(extension, L".png")) {
-		icon = soft_info.m_strSoftIcon;
-	}
-
-	if (icon.empty() && soft_info.key_name[0] == '{') {
-		icon = FileHelper::GetIconWithGuid(soft_info.key_name);
-	}
-
-	if (icon.empty() && 0 == _wcsicmp(extension, L".exe")) {
-		icon = FileHelper::GetIconWithExePath(soft_info.m_strSoftIcon);
-	}
-
-	if(icon.empty() &&0 == _wcsicmp(extension, L".ico")) {
-		icon = FileHelper::GetIconWithIcoPath(soft_info.m_strSoftIcon);
-	}
-
 	auto line = new CSoftListElementUI;
 	line->SetScheme(scheme_.get());
 	line->SetSoftName(soft_info.m_strSoftName);
 	line->SetBit(soft_info.bit);
-	line->SetKeyName(soft_info.key_name);
-	line->SetIcon(icon.c_str());
+	line->SetIcon(soft_info.m_strSoftIcon,
+				  soft_info.key_name, 
+				  soft_info.m_strInstallLocation);
 	line->SetLocalVersion(soft_info.m_strSoftVersion);
 	line->SetUninstallPath(soft_info.m_strUninstallPth);
 

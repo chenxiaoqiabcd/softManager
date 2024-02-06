@@ -74,22 +74,14 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 
 		update_info_vec_.emplace_back(soft_it.m_strSoftName.GetString(), soft_it.bit);
 
-		auto icon = FileHelper::GetIconWithGuid(soft_it.key_name);
-
-		if (icon.empty()) {
-			icon = FileHelper::GetIconWithExePath(soft_it.m_strSoftIcon);
-		}
-		else {
-			KF_INFO(L"通过guid定位到的软件图标: %s", soft_it.m_strSoftName);
-		}
-
 		auto line = new CUpdateListElementUI;
 
 		line->SetScheme(scheme_.get());
 		line->SetSoftName(soft_it.m_strSoftName);
-		line->SetIcon(icon.c_str());
+		line->SetIcon(soft_it.m_strSoftIcon,
+					  soft_it.key_name,
+					  soft_it.m_strInstallLocation);
 		line->SetBit(soft_it.bit);
-		line->SetKeyName(soft_it.key_name);
 		line->SetLocalVersion(soft_it.m_strSoftVersion);
 		line->SetUninstallPath(soft_it.m_strUninstallPth);
 		line->SetUpdateInfo(info->version, info->url, info->actions,

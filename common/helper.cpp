@@ -30,20 +30,6 @@ bool Helper::ExecuteApplication(const wchar_t* file_path, const wchar_t* argumen
 	return bSuccess;
 }
 
-bool Helper::WriteFile(const char* path, const std::string& data)
-{
-	DeleteFileA(path);
-
-	FILE* f;
-	fopen_s(&f, path, "wb");
-	if (f == NULL) {
-		return false;
-	}
-	fwrite(data.c_str(), data.size(), 1, f);
-	fclose(f);
-	return true;
-}
-
 bool Helper::AppendFileData(const char* path, const std::string& data) {
 	FILE* f;
 	fopen_s(&f, path, "ab");

@@ -89,11 +89,6 @@ bool SoftInfoCacheData::GetValue(const wchar_t* key_name, HKEY root_key, DWORD u
 
 	auto root = jsoncons::json::parse(CStringHelper::w2u(root_data));
 
-	long long k = root["key"].as<long long>();
-	long long k_a = reinterpret_cast<long long>(root_key);
-
-	DWORD o = root["options"].as<DWORD>();
-
 	if (root["key"].as<long long>() != reinterpret_cast<long long>(root_key) ||
 		root["options"].as<DWORD>() != ulOptions) {
 		return false;
