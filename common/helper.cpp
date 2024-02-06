@@ -92,6 +92,33 @@ unsigned long Helper::GetDirectorySize(const wchar_t* szDir) {
 	return llSize;
 }
 
+bool Helper::IsEmptyDirectory(const wchar_t* value) {
+	wchar_t find_folder[MAX_PATH];
+	ZeroMemory(find_folder, sizeof(find_folder));
+	wcscpy(find_folder, value);
+	PathAppend(find_folder, L"*.*");
+
+	WIN32_FIND_DATA wfd;
+	const auto hFind = FindFirstFile(find_folder, &wfd);
+	if (hFind == INVALID_HANDLE_VALUE) {
+		return true;
+	}
+
+	bool empty_directory = true;
+
+	do {
+		if (0 == wcscmp(wfd.cFileName, L".") || 0 == wcscmp(wfd.cFileName, L"..")) {
+			continue;
+		}
+
+		empty_directory = false;
+		break;
+	} while (FindNextFile(hFind, &wfd));
+
+	FindClose(hFind);
+	return empty_directory;
+}
+
 bool Helper::UpdateClipboard(std::string_view value) {
 	if (!OpenClipboard(nullptr)) {
 		return true;
@@ -313,14 +340,26 @@ std::wstring Helper::RegisterQueryValue(const HKEY& hkRKey, std::wstring_view va
 	return szBuffer;
 }
 
-int Helper::RegisterQueryDWordValue(const HKEY& hkRKey, std::wstring_view value_name) {
+DWORD Helper::RegisterQueryDWordValue(const HKEY& hkRKey, std::wstring_view value_name) {
 	DWORD dwNameLen = 255;
 	DWORD dwType = REG_DWORD;
 
 	DWORD dwBuffer = 0;
-	RegQueryValueEx(hkRKey, value_name.data(), nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwBuffer), &dwNameLen);
+	RegQueryValueEx(hkRKey, value_name.data(), nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwBuffer),
+					&dwNameLen);
 
 	return dwBuffer;
+}
+
+time_t Helper::RegisterQueryLastWriteTime(const HKEY& key) {
+	FILETIME file_time;
+	const LSTATUS st = RegQueryInfoKey(key, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+									   nullptr, nullptr, nullptr, &file_time);
+	if (st != ERROR_SUCCESS) {
+		return 0;
+	}
+
+	return FileTimeToTimeStamp(file_time);
 }
 
 std::wstring Helper::MakeUniqueName(const wchar_t* folder, const wchar_t* file_name) {
@@ -373,6 +412,22 @@ std::wstring Helper::GetCacheFile(const wchar_t* file_name) {
 	PathAppend(cache_file, file_name);
 
 	return cache_file;
+}
+
+time_t Helper::FileTimeToTimeStamp(const FILETIME& file_time) {
+	SYSTEMTIME sys_time;
+	FileTimeToSystemTime(&file_time, &sys_time);
+
+	struct tm time;
+	time.tm_year = sys_time.wYear - 1900;
+	time.tm_mon = sys_time.wMonth - 1;
+	time.tm_mday = sys_time.wDay;
+	time.tm_hour = sys_time.wHour;
+	time.tm_min = sys_time.wMinute;
+	time.tm_sec = sys_time.wSecond;
+	time.tm_isdst = -1;
+
+	return mktime(&time);
 }
 
 // private

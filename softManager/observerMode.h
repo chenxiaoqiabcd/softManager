@@ -9,6 +9,7 @@ class IDisplay {
 public:
 	virtual void UpdateDate(bool need_update, void* data) = 0;
 	virtual void ClearData() = 0;
+	virtual void ClearData(void* data) = 0;
 };
 
 class DataCenter {
@@ -33,6 +34,12 @@ public:
 	void ClearData() const {
 		for (const auto& it : data_list_) {
 			it->ClearData();
+		}
+	}
+
+	void ClearData(void* data) const {
+		for(const auto& it : data_list_) {
+			it->ClearData(data);
 		}
 	}
 private:

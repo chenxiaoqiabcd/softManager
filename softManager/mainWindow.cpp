@@ -98,7 +98,7 @@ void CMainWindow::Init()
 	EventQueueInstance->AppendNewThreadListener(EVENT_UPDATE_SOFT_LIST,
 												OnEventUpdateSoftList, this);
 
-	EventQueueInstance->AppendCurrentThreadListener(EVENT_UPDATE_SOFT_DATA,
+	EventQueueInstance->AppendNewThreadListener(EVENT_UPDATE_SOFT_DATA,
 													OnEventUpdateSoftData, this);
 
 	wchar_t file_name[MAX_PATH];
@@ -153,8 +153,7 @@ DWORD CMainWindow::ThreadGetUpdateInfo(LPVOID lParam) {
 		pThis->CheckUpdate();
 	}
 
-	EventQueueInstance->SendEvent(EVENT_UPDATE_SOFT_DATA);
-
+	EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA);
 	return 0;
 }
 
@@ -179,18 +178,21 @@ void CMainWindow::UpdateDate(bool need_update, void* data) {
 			break;
 		}
 
-		DuiLib::CButtonUI* pLabel = static_cast<DuiLib::CButtonUI*>(m_pm.FindControl(L"soft_updater_btn"));
-		if (pLabel) {
-			DuiLib::CDuiString text = pLabel->GetText();
-
-			DuiLib::CDuiString new_text;
-			new_text.Format(L"%d", _ttoi(text) + 1);
-			pLabel->SetText(new_text);
-
-			pLabel->SetToolTip(L"可升级软件数");
-		}
+		UpdateUpdateCount(1);
 
 		break;
+	}
+}
+
+void CMainWindow::UpdateUpdateCount(int value) const {
+	if (const auto pLabel = dynamic_cast<DuiLib::CButtonUI*>(m_pm.FindControl(L"soft_updater_btn"))) {
+		const DuiLib::CDuiString text = pLabel->GetText();
+
+		DuiLib::CDuiString new_text;
+		new_text.Format(L"%d", _ttoi(text) + value);
+		pLabel->SetText(new_text);
+
+		pLabel->SetToolTip(L"可升级软件数");
 	}
 }
 
@@ -199,6 +201,10 @@ void CMainWindow::ClearData() {
 	if (pLabel) {
 		pLabel->SetText(L"");
 	}
+}
+
+void CMainWindow::ClearData(void* data) {
+	UpdateUpdateCount(-1);
 }
 
 DWORD CMainWindow::OnEventUpdateStatusLabel(WPARAM wParam, LPARAM lParam, LPVOID data) {

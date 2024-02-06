@@ -47,8 +47,6 @@ void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 			
 			HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
 			CloseHandle(hThread);
-
-			return;
 		}
 	}
 }
@@ -123,11 +121,36 @@ void CInstalledWnd::UpdateDate(bool need_update, void* data) {
 		if(need_update) {
 			line->UpdateUpgradeInfo(info->version, info->url);
 		}
+
+		break;
 	}
 }
 
 void CInstalledWnd::ClearData() {
 
+}
+
+void CInstalledWnd::ClearData(void* data) {
+	auto info = (UpdateInfo*)data;
+
+	DuiLib::CDuiString name = CStringHelper::a2w(info->name).c_str();
+
+	DuiLib::CListUI* pList = (DuiLib::CListUI*)m_pm.FindControl(L"soft_list_v2");
+
+	int count = pList->GetCount();
+
+	for (int n = 0; n < count; ++n) {
+		CSoftListElementUI* line = (CSoftListElementUI*)pList->GetItemAt(n);
+
+		if (nullptr == StrStrIW(line->GetSoftName(), name)) {
+			continue;
+		}
+
+		if (!info->msg.empty()) {
+			line->UpdateMessage(info->msg.c_str());
+			break;
+		}
+	}
 }
 
 LONGLONG CInstalledWnd::GetInstallPathSize(const wchar_t* install_path, const wchar_t* uninstall_path) {

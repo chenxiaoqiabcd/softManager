@@ -23,6 +23,8 @@ protected:
 
 	void ClearData() override;
 
+	void ClearData(void* data) override;
+
 	void UpdateDate();
 
 	void RemoveLine(const wchar_t* soft_name) const;

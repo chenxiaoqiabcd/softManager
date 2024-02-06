@@ -18,6 +18,8 @@ public:
 
 	static unsigned long GetDirectorySize(const wchar_t* szDir);
 
+	static bool IsEmptyDirectory(const wchar_t* value);
+
 	static bool UpdateClipboard(std::string_view value);
 
 	static std::string ToStringSize(const std::variant<double, long long>& value);
@@ -37,7 +39,9 @@ public:
 
 	static std::wstring RegisterQueryValue(const HKEY& hkRKey, std::wstring_view value_name);
 
-	static int RegisterQueryDWordValue(const HKEY& hkRKey, std::wstring_view value_name);
+	static DWORD RegisterQueryDWordValue(const HKEY& hkRKey, std::wstring_view value_name);
+
+	static time_t RegisterQueryLastWriteTime(const HKEY& key);
 
 	static std::wstring MakeUniqueName(const wchar_t* folder, const wchar_t* file_name);
 
@@ -46,6 +50,8 @@ public:
 	static std::string GetCacheFile(const char* file_name);
 
 	static std::wstring GetCacheFile(const wchar_t* file_name);
+
+	static time_t FileTimeToTimeStamp(const FILETIME& file_time);
 private:
 	static std::string GetCacheFolder(const char* folder_name = "softManager");
 

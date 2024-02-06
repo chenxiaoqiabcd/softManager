@@ -27,6 +27,8 @@ protected:
 	void UpdateDate(bool need_update, void* data) override;
 
 	void ClearData() override;
+
+	void ClearData(void* data) override;
 private:
 	LONGLONG GetInstallPathSize(const wchar_t* install_path, const wchar_t* uninstall_path);
 

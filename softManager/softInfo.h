@@ -9,6 +9,9 @@
 #include <atlstr.h>
 #include <vector>
 #include <mutex>
+#include <optional>
+
+#include <jsoncons/json.hpp>
 
 struct SoftInfo
 {
@@ -30,6 +33,8 @@ struct SoftInfo
 	CString key_name;
 
 	uint8_t bit;	// 32/64
+
+	time_t time_stamp;
 };
 
 class CSoftInfo
@@ -72,12 +77,14 @@ protected:
 
 	CString GetIcon(CString soft_name, CString install_path);
 
-	bool CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info);
+	SoftInfo GenerateSoftInfo(HKEY key, const wchar_t* key_name, DWORD ulOptions);
 
-	void PushData(HKEY key, DWORD ulOptions, SoftInfo* soft_info);
+	bool CheckSoftInfo(SoftInfo* info);
 
-	void AddSoftInfo(HKEY root_key, std::wstring_view lpSubKey, std::wstring_view szKeyName,
-					 DWORD ulOptions);
+	SoftInfo GetSoftInfo(HKEY hkRKey, std::wstring_view szKeyName, DWORD ulOptions);
+
+	void AddSoftInfo(HKEY root_key, std::wstring_view lpSubKey,
+										std::wstring_view szKeyName, DWORD ulOptions);
 
 	void Init(HKEY root_key, DWORD ulOptions);
 

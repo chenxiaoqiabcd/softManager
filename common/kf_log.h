@@ -7,9 +7,9 @@ class __declspec (dllexport) KfLog {
 public:
 	static void Output(const char* type, const char* time, const char* file, const char* function, int line);
 
-	static void Output(uint32_t len, char const* const format, ...);
+	static void Output(char const* const format, ...);
 
-	static void Output(uint32_t len, const wchar_t* format, ...);
+	static void Output(const wchar_t* format, ...);
 
 	static void SetInfoTextAttribute();
 
@@ -37,13 +37,7 @@ private:
 
 #define KF_INFO(...) KfLog::SetInfoTextAttribute(),\
 	KfLog::Output("info", __TIME__, __FILE__, __FUNCSIG__, __LINE__), \
-	KfLog::Output(260, __VA_ARGS__), \
-	KfLog::ResetState() \
-	//
-
-#define KF_INFO_L(len, ...) KfLog::SetInfoTextAttribute(),\
-	KfLog::Output("info", __TIME__, __FILE__, __FUNCSIG__, __LINE__), \
-	KfLog::Output(len, __VA_ARGS__), \
+	KfLog::Output(__VA_ARGS__), \
 	KfLog::ResetState() \
 	//
 
@@ -59,25 +53,13 @@ private:
 
 #define KF_WARN(...) KfLog::SetWarnTextAttribute(),\
 	KfLog::Output("warning", __TIME__, __FILE__, __FUNCSIG__, __LINE__),\
-	KfLog::Output(260, __VA_ARGS__), \
-	KfLog::ResetState() \
-	//
-
-#define KF_WARN_L(len, ...) KfLog::SetWarnTextAttribute(),\
-	KfLog::Output("warning", __TIME__, __FILE__, __FUNCSIG__, __LINE__),\
-	KfLog::Output(len, __VA_ARGS__), \
+	KfLog::Output(__VA_ARGS__), \
 	KfLog::ResetState() \
 	//
 
 #define KF_ERROR(...) KfLog::SetErrorTextAttribute(),\
 	KfLog::Output("error", __TIME__, __FILE__, __FUNCSIG__, __LINE__), \
-	KfLog::Output(260, __VA_ARGS__), \
-	KfLog::ResetState() \
-	//
-
-#define KF_ERROR_L(len, ...) KfLog::SetErrorTextAttribute(),\
-	KfLog::Output("error", __TIME__, __FILE__, __FUNCSIG__, __LINE__), \
-	KfLog::Output(len, __VA_ARGS__), \
+	KfLog::Output(__VA_ARGS__), \
 	KfLog::ResetState() \
 	//
 

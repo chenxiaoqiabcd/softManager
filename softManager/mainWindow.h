@@ -31,7 +31,11 @@ protected:
 
 	void UpdateDate(bool need_update, void* data) override;
 
+	void UpdateUpdateCount(int value) const;
+
 	void ClearData() override;
+
+	void ClearData(void* data) override;
 
 	static DWORD OnEventUpdateStatusLabel(WPARAM wParam, LPARAM lParam, LPVOID data);
 

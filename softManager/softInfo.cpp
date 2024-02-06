@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <Msi.h>
 
+#include "cache_data_helper.h"
 #include "event_queue_global_manager.h"
 #include "file_helper.h"
 #include "helper.h"
@@ -204,12 +205,12 @@ CString CSoftInfo::GetIcon(CString soft_name, CString install_path) {
 	return L"";
 }
 
-DWORD GetSize(const CString& install_path, const CString& uninstall_path) {
+bool IsValidInstallPath(const CString& install_path, const CString& uninstall_path) {
 	const auto install_path_temp = FileHelper::GetFilePath(install_path.GetString());
 	const auto uninstall_path_temp = FileHelper::GetFilePath(uninstall_path.GetString());
 
 	if(!install_path_temp.empty()) {
-		return Helper::GetDirectorySize(install_path_temp.c_str());
+		return !Helper::IsEmptyDirectory(install_path_temp.c_str());
 	}
 
 	if(!uninstall_path_temp.empty()) {
@@ -219,20 +220,31 @@ DWORD GetSize(const CString& install_path, const CString& uninstall_path) {
 		PathRemoveFileSpec(szUnInstallPath);
 
 		if (PathIsDirectory(szUnInstallPath)) {
-			return Helper::GetDirectorySize(szUnInstallPath);
+			return !Helper::IsEmptyDirectory(szUnInstallPath);
 		}
 	}
 
-	return 0;
+	return false;
 }
 
-bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
-	info->m_strSoftName = Helper::RegisterQueryValue(key, L"DisplayName").c_str();
-	info->m_strInstallLocation = Helper::RegisterQueryValue(key, L"InstallLocation").c_str();
-	info->m_strUninstallPth = Helper::RegisterQueryValue(key, L"UninstallString").c_str();
-	info->m_strSoftVersion = Helper::RegisterQueryValue(key, L"DisplayVersion").c_str();
-	info->key_name = szKeyName;
+SoftInfo CSoftInfo::GenerateSoftInfo(HKEY key, const wchar_t* key_name, DWORD ulOptions) {
+	SoftInfo info{};
 
+	info.time_stamp = Helper::RegisterQueryLastWriteTime(key);
+	info.m_strSoftName = Helper::RegisterQueryValue(key, L"DisplayName").c_str();
+	info.m_strInstallLocation = Helper::RegisterQueryValue(key, L"InstallLocation").c_str();
+	info.m_strUninstallPth = Helper::RegisterQueryValue(key, L"UninstallString").c_str();
+	info.m_strSoftVersion = Helper::RegisterQueryValue(key, L"DisplayVersion").c_str();
+	info.key_name = key_name;
+	info.m_strPublisher = Helper::RegisterQueryValue(key, L"Publisher").c_str();
+	info.m_strMainProPath = Helper::RegisterQueryValue(key, L"InstallLocation").c_str();
+	info.m_strSoftIcon = GetIcon(key);
+	info.bit = (ulOptions & KEY_WOW64_64KEY) ? 64 : 32;
+
+	return info;
+}
+
+bool CSoftInfo::CheckSoftInfo(SoftInfo* info) {
 	if (-1 != info->key_name.Find(L"KB") && -1 != info->key_name.Find(L"{")) {
 		m_SystemPatchesArr.push_back(*info);
 		return false;
@@ -245,7 +257,31 @@ bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
 
 	if (StrStrIW(info->m_strInstallLocation, L"ProgramData") ||
 		StrStrIW(info->m_strUninstallPth, L"ProgramData")) {
-		// KF_WARN(L"programdata目录下的软件 %s", info->m_strSoftName.GetString());
+		return false;
+	}
+
+	if (info->m_strSoftName.IsEmpty()) {
+		// KF_WARN(L"版本号为空的软件 %s %s", info->key_name, info->m_strSoftName);
+		return false;
+	}
+
+	if (!IsValidInstallPath(info->m_strInstallLocation, info->m_strUninstallPth)) {
+		// KF_WARN(L"找不到安装目录的软件 %s %s %s",
+		// 		info->m_strSoftName, info->m_strInstallLocation, info->m_strUninstallPth);
+		return false;
+	}
+
+	if (info->m_strSoftIcon.IsEmpty()) {
+		info->m_strSoftIcon = GetIcon(info->m_strSoftName, info->m_strInstallLocation);
+	}
+
+	if (info->m_strSoftVersion.IsEmpty()) {
+		info->m_strSoftVersion =
+			FileHelper::GetFileVersion(info->m_strSoftIcon).c_str();
+	}
+
+	if (info->m_strSoftVersion.IsEmpty() || info->m_strSoftVersion == L"1") {
+		// KF_WARN(L"版本号为空的软件 %s %s", soft_info->key_name, soft_info->m_strSoftName);
 		return false;
 	}
 
@@ -262,56 +298,34 @@ bool CSoftInfo::CheckData(HKEY key, const wchar_t* szKeyName, SoftInfo* info) {
 		m_SoftInfoArr.erase(it_find);
 	}
 
-	auto FindSoftInfo = [szKeyName](const SoftInfo& info) {
-		return info.key_name == szKeyName;
+	auto FindSoftInfo = [info](const SoftInfo& s) {
+		return s.key_name == info->key_name;
 	};
 
 	// 过滤重复的软件
 	if (std::any_of(m_SoftInfoArr.begin(), m_SoftInfoArr.end(), FindSoftInfo)) {
-		// KF_WARN(L"已经在注册表找到的软件 %s", info->m_strSoftName);
-		return false;
-	}
-
-	if (info->m_strSoftName.IsEmpty()) {
-		// KF_WARN(L"版本号为空的软件 %s %s", info->key_name, info->m_strSoftName);
-		return false;
-	}
-
-	if (0 == GetSize(info->m_strInstallLocation, info->m_strUninstallPth)) {
-		// KF_WARN(L"找不到安装目录的软件 %s %s %s",
-		// 		info->m_strSoftName, info->m_strInstallLocation, info->m_strUninstallPth);
+		// KF_WARN(L"已经在注册表找到的软件 %s", info.m_strSoftName);
 		return false;
 	}
 
 	return true;
 }
 
-void CSoftInfo::PushData(HKEY key, DWORD ulOptions, SoftInfo* soft_info) {
-	soft_info->m_strPublisher = Helper::RegisterQueryValue(key, L"Publisher").c_str();
-	soft_info->m_strMainProPath = Helper::RegisterQueryValue(key, L"InstallLocation").c_str();
-	soft_info->m_strSoftIcon = GetIcon(key);
-	soft_info->bit = (ulOptions & KEY_WOW64_64KEY) ? 64 : 32;
+SoftInfo CSoftInfo::GetSoftInfo(HKEY hkRKey, std::wstring_view szKeyName, DWORD ulOptions) {
+	const auto time_stamp = Helper::RegisterQueryLastWriteTime(hkRKey);
 
-	if (soft_info->m_strSoftIcon.IsEmpty()) {
-		soft_info->m_strSoftIcon = GetIcon(soft_info->m_strSoftName,
-										  soft_info->m_strInstallLocation);
+	SoftInfo soft_info;
+	if (SoftInfoCacheData::GetValue(szKeyName.data(), hkRKey, ulOptions, &soft_info)) {
+		if (time_stamp == soft_info.time_stamp) {
+			return soft_info;
+		}
 	}
 
-	if (soft_info->m_strSoftVersion.IsEmpty()) {
-		soft_info->m_strSoftVersion =
-			FileHelper::GetFileVersion(soft_info->m_strSoftIcon).c_str();
-	}
-
-	if (soft_info->m_strSoftVersion.IsEmpty() || soft_info->m_strSoftVersion == L"1") {
-		// KF_WARN(L"版本号为空的软件 %s %s", soft_info->key_name, soft_info->m_strSoftName);
-		return;
-	}
-
-	m_SoftInfoArr.push_back(*soft_info);
+	return GenerateSoftInfo(hkRKey, szKeyName.data(), ulOptions);
 }
 
-void CSoftInfo::AddSoftInfo(HKEY root_key, std::wstring_view lpSubKey, std::wstring_view szKeyName,
-							DWORD ulOptions) {
+void CSoftInfo::AddSoftInfo(HKEY root_key, std::wstring_view lpSubKey, 
+											   std::wstring_view szKeyName, DWORD ulOptions) {
 	if(szKeyName.empty()) {
 		return;
 	}
@@ -325,12 +339,11 @@ void CSoftInfo::AddSoftInfo(HKEY root_key, std::wstring_view lpSubKey, std::wstr
 		return;
 	}
 
-	SoftInfo soft_info;
-	if(!CheckData(hkRKey, szKeyName.data(), &soft_info)) {
-		return;
-	}
+	auto soft_info = GetSoftInfo(hkRKey, szKeyName, ulOptions);
 
-	PushData(hkRKey, ulOptions, &soft_info);
+	if(CheckSoftInfo(&soft_info)) {
+		m_SoftInfoArr.push_back(soft_info);
+	}
 }
 
 void CSoftInfo::Init(HKEY root_key, DWORD ulOptions) {

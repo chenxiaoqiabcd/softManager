@@ -43,6 +43,36 @@ struct HeaderData
 	std::string file_name;
 };
 
+std::string ParseLocationFileName(std::string_view location_url) {
+	auto location = CStringHelper::DeescapeURL(location_url.data());
+
+	const auto url_arg_index = location.find("?");
+	if (std::string::npos == url_arg_index) {
+		const auto url_body = location.substr(0, url_arg_index);
+
+		const auto index = url_body.rfind("/");
+		if (std::string::npos != index) {
+			return url_body.substr(index + 1).data();
+		}
+
+		return "";
+	}
+
+	const KfString url_arg = location.substr(static_cast<int>(url_arg_index) + 1).data();
+
+	const auto url_args = url_arg.Split("&");
+
+	for (const auto& it : url_args) {
+		constexpr auto filter = "filename=";
+		const auto filter_index = it.Find(filter);
+		if (filter_index != std::string::npos) {
+			return it.SubStr(static_cast<int>(filter_index + strlen(filter))).GetString();
+		}
+	}
+
+	return "";
+}
+
 auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t {
 	const auto header_data = static_cast<HeaderData*>(stream);
 
@@ -53,7 +83,6 @@ auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t 
 	auto filter = "Accept-Ranges: ";
 	if (StrStrIA(header.get(), filter)) {
 		header_data->accept_ranges = true;
-
 		KF_INFO("out put header: %s", header.get());
 	}
 
@@ -74,17 +103,8 @@ auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t 
 	filter = "location: ";
 	index = temp.MakeLower().Find(filter);
 	if (std::string::npos != index) {
-		temp = temp.SubStr(index + strlen(filter));
-		index = temp.Find("?");
-		if(index != std::string::npos) {
-			temp = temp.SubStr(0, index);
-			index = temp.ReverseFind("/");
-			if(std::string::npos != index) {
-				header_data->file_name = temp.SubStr(index + 1);
-
-				KF_INFO_L(nmemb * size + 17, "out put header: %s", header.get());
-			}
-		}
+		header_data->file_name = ParseLocationFileName(temp.SubStr(index + strlen(filter)).GetString());
+		KF_INFO("out put header: %s", header.get());
 	}
 
 	return size * nmemb;
@@ -113,8 +133,8 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 	}
 
 	// 如果在5秒内低于1字节/秒，则终止
-	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_TIME, 1L);
-	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_LIMIT, 1L);
+	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_TIME, 60L);
+	curl_easy_setopt(curl_guard.get(), CURLOPT_LOW_SPEED_LIMIT, 30L);
 
 	curl_easy_setopt(curl_guard.get(), CURLOPT_SSL_VERIFYPEER, 0);
 	curl_easy_setopt(curl_guard.get(), CURLOPT_SSL_VERIFYHOST, 0);
@@ -197,8 +217,8 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 		curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
 
 		// 如果在5秒内低于1个字节/秒，则终止
-		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 5L);
-		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 60L);
+		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 30L);
 
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);

@@ -21,7 +21,7 @@ void KfLog::Output(const char* type, const char* time, const char* file, const c
 	std::ignore = printf_s("[%s %s]%s:%d %s ", type, time, PathFindFileNameA(file), line, function);
 }
 
-void KfLog::Output(uint32_t len, char const* const format, ...) {
+void KfLog::Output(char const* const format, ...) {
 	va_list list;
 	va_start(list, format);
 	const auto result = KfString::FormatList(format, list);
@@ -30,7 +30,7 @@ void KfLog::Output(uint32_t len, char const* const format, ...) {
 	std::cout << result << "\n";
 }
 
-void KfLog::Output(uint32_t len, const wchar_t* format, ...) {
+void KfLog::Output(const wchar_t* format, ...) {
 	va_list list;
 	va_start(list, format);
 	const auto result = KfString::FormatList(format, list);
@@ -107,8 +107,4 @@ void logTest() {
 	KF_INFO("hello %s", "world");
 	KF_WARN("hello %s", "world");
 	KF_ERROR("hello %s", "world");
-
-	KF_INFO_L(MAX_PATH, "hello %s", "world");
-	KF_WARN_L(MAX_PATH, "hello %s", "world");
-	KF_ERROR_L(MAX_PATH, "hello %s", "world");
 }
