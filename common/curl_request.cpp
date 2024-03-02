@@ -4,7 +4,6 @@
 #include <Shlwapi.h>
 
 #include "kf_log.h"
-#include "my_time.h"
 #include "kf_str.h"
 #include "request_helper.h"
 

@@ -11,4 +11,5 @@ CMake 3.17+vs2019
 # 运行效果
 
 ![main](main.png)
+![install_list](install_list.png)
 ![update_list](update_list.png)

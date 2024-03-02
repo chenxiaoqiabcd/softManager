@@ -10,12 +10,8 @@ namespace Gdiplus
 	class Bitmap;
 }
 
-class MyTime;
-
 class FileHelper {
 public:
-	static MyTime GetLastWriteTime(std::wstring_view file_path);
-
 	static std::vector<char> ReadData(const char* file_path);
 
 	static std::streampos GetSize(const char* file_path);

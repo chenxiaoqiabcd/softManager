@@ -9,15 +9,8 @@
 
 #include "helper.h"
 #include "kf_str.h"
-#include "my_time.h"
 
 #pragma comment(lib, "Version.lib")
-
-MyTime FileHelper::GetLastWriteTime(std::wstring_view file_path) {
-	struct _stat64i32 file_stat;
-	_wstat64i32(file_path.data(), &file_stat);
-	return file_stat.st_mtime;
-}
 
 std::vector<char> FileHelper::ReadData(const char* file_path) {
 	std::ifstream file(file_path, std::ios::in | std::ios::binary);

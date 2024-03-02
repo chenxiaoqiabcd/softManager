@@ -16,7 +16,7 @@ CInstalledWnd::~CInstalledWnd() {
 }
 
 void CInstalledWnd::UpdateSoftInfo() {
-	HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
+	const HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
 	CloseHandle(hThread);
 }
 
@@ -27,7 +27,7 @@ LPCTSTR CInstalledWnd::GetSkinFile() {
 void CInstalledWnd::Init() {
 	UpdateInstance->GetDataCenter()->Attach(this);
 
-	HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
+	const HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
 	CloseHandle(hThread);
 }
 
@@ -52,9 +52,9 @@ void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 }
 
 DWORD CInstalledWnd::ThreadUpdateSoftListV2(LPVOID lParam) {
-	CInstalledWnd* pThis = (CInstalledWnd*)lParam;
+	CInstalledWnd* pThis = static_cast<CInstalledWnd*>(lParam);
 
-	DuiLib::CListUI* pList = (DuiLib::CListUI*)pThis->m_pm.FindControl(L"soft_list_v2");
+	DuiLib::CListUI* pList = static_cast<DuiLib::CListUI*>(pThis->m_pm.FindControl(L"soft_list_v2"));
 
 	pList->RemoveAll();
 	

@@ -110,7 +110,8 @@ auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t 
 	return size * nmemb;
 }
 
-double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* ptr_file_name) const {
+double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* ptr_file_name,
+											 bool no_body /*= true*/) const {
 	auto ReleaseCurl = [](CURL* c) {
 		curl_easy_cleanup(c);
 	};
@@ -149,12 +150,22 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 
 	curl_easy_setopt(curl_guard.get(), CURLOPT_NOPROGRESS, 1L);
 
-	curl_easy_setopt(curl_guard.get(), CURLOPT_NOBODY, 1L);
+	if(no_body) {
+		// 开启这个选项会导致Figma下载404
+		curl_easy_setopt(curl_guard.get(), CURLOPT_NOBODY, 1L);
+	}
 
 	const CURLcode code = curl_easy_perform(curl_guard.get());
 
 	// CURLE_WRITE_ERROR 是正常的，因为我们只需要获取头部信息
 	if (code == CURLE_OK || code == CURLE_WRITE_ERROR || code == CURLE_RECV_ERROR) {
+		DWORD http_code = 0;
+		curl_easy_getinfo(curl_guard.get(), CURLINFO_HTTP_CODE, &http_code);
+
+		if(404 == http_code) {
+			return GetContentLength(accept_ranges, ptr_file_name, false);
+		}
+
 		*accept_ranges = header_data->accept_ranges;
 
 		if(!header_data->file_name.empty()) {
