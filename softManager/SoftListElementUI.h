@@ -16,13 +16,11 @@ public:
 
 	DuiLib::CDuiString GetSoftName() const;
 
-	void SetIcon(const wchar_t* value);
+	void SetIcon(const wchar_t* soft_icon, const wchar_t* key_name, const wchar_t* install_location);
 
 	void SetLocalVersion(const wchar_t* value);
 
-	void SetBit(char bit);
-
-	void SetKeyName(const wchar_t* key_name);
+	void SetBit(uint8_t bit);
 
 	uint8_t GetBit() const;
 
@@ -88,7 +86,7 @@ private:
 
 	bool cracked_ = false;
 
-	char bit_;
+	uint8_t bit_ = 0;
 };
 
 

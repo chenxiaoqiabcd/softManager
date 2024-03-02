@@ -1,6 +1,7 @@
 #include "SoftListElementUI.h"
 
 #include "event_queue_global_manager.h"
+#include "file_helper.h"
 #include "helper.h"
 #include "installPackageWnd.h"
 #include "kf_log.h"
@@ -24,20 +25,42 @@ DuiLib::CDuiString CSoftListElementUI::GetSoftName() const {
 	return soft_name_;
 }
 
-void CSoftListElementUI::SetIcon(const wchar_t* value) {
-	icon_ = value;
+void CSoftListElementUI::SetIcon(const wchar_t* soft_icon, const wchar_t* key_name,
+								 const wchar_t* install_location) {
+	key_name_ = key_name;
+
+	std::wstring icon;
+
+	const auto extension = PathFindExtension(soft_icon);
+	if (0 == wcscmp(extension, L".png")) {
+		icon = soft_icon;
+	}
+
+	if (icon.empty() && key_name[0] == '{') {
+		icon = FileHelper::GetIconWithGuid(key_name);
+	}
+
+	if (icon.empty() && 0 == _wcsicmp(extension, L".exe")) {
+		icon = FileHelper::GetIconWithExePath(soft_icon);
+	}
+
+	if (icon.empty() && 0 == _wcsicmp(extension, L".ico")) {
+		icon = FileHelper::GetIconWithIcoPath(soft_icon);
+	}
+
+	if(icon.empty()) {
+		icon = FileHelper::GetIconWithExeOrIcoFile(install_location);
+	}
+
+	icon_ = icon.c_str();
 }
 
 void CSoftListElementUI::SetLocalVersion(const wchar_t* value) {
 	local_version_ = value;
 }
 
-void CSoftListElementUI::SetBit(char bit) {
+void CSoftListElementUI::SetBit(uint8_t bit) {
 	bit_ = bit;
-}
-
-void CSoftListElementUI::SetKeyName(const wchar_t* key_name) {
-	key_name_ = key_name;
 }
 
 uint8_t CSoftListElementUI::GetBit() const {

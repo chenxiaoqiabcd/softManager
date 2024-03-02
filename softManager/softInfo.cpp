@@ -174,37 +174,6 @@ CString CSoftInfo::GetIcon(HKEY key) {
 	return FileHelper::GetFilePath(icon_path.c_str()).c_str();
 }
 
-CString CSoftInfo::GetIcon(CString soft_name, CString install_path) {
-	if(soft_name == L"Inkscape") {
-		wchar_t icon_path[1024];
-		ZeroMemory(icon_path, sizeof(wchar_t) * 1024);
-		wcscpy_s(icon_path, install_path);
-		PathAppend(icon_path, L"bin\\inkscape.exe");
-	
-		return icon_path;
-	}
-	
-	if (StrStrIW(soft_name, L"notepad--")) {
-		wchar_t icon_path[1024];
-		ZeroMemory(icon_path, sizeof(wchar_t) * 1024);
-		wcscpy_s(icon_path, install_path);
-		PathAppend(icon_path, L"notepad--.exe");
-	
-		return icon_path;
-	}
-
-	if(StrStrIW(soft_name, L"NeoVim")) {
-		wchar_t icon_path[1024];
-		ZeroMemory(icon_path, sizeof(wchar_t) * 1024);
-		wcscpy_s(icon_path, install_path);
-		PathAppend(icon_path, L"bin\\nvim-qt.exe");
-
-		return icon_path;
-	}
-
-	return L"";
-}
-
 bool IsValidInstallPath(const CString& install_path, const CString& uninstall_path) {
 	const auto install_path_temp = FileHelper::GetFilePath(install_path.GetString());
 	const auto uninstall_path_temp = FileHelper::GetFilePath(uninstall_path.GetString());
@@ -269,10 +238,6 @@ bool CSoftInfo::CheckSoftInfo(SoftInfo* info) {
 		// KF_WARN(L"找不到安装目录的软件 %s %s %s",
 		// 		info->m_strSoftName, info->m_strInstallLocation, info->m_strUninstallPth);
 		return false;
-	}
-
-	if (info->m_strSoftIcon.IsEmpty()) {
-		info->m_strSoftIcon = GetIcon(info->m_strSoftName, info->m_strInstallLocation);
 	}
 
 	if (info->m_strSoftVersion.IsEmpty()) {

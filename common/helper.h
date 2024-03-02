@@ -12,8 +12,6 @@ class Helper {
 public:
 	static bool ExecuteApplication(const wchar_t* file_path, const wchar_t* argument);
 	
-	static bool WriteFile(const char* path, const std::string& data);
-
 	static bool AppendFileData(const char* path, const std::string& data);
 
 	static unsigned long GetDirectorySize(const wchar_t* szDir);
