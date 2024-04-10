@@ -140,7 +140,7 @@ std::string Helper::ToStringSize(const std::variant<double, long long>& value) {
 		ZeroMemory(text, MAX_PATH);
 
 		if (arg < g_k_bit) {
-			sprintf_s(text, "%lld B", arg);
+			sprintf_s(text, "%.0lf B", arg * 1.0f);
 		}
 		else if (arg < g_m_bit) {
 			sprintf_s(text, "%.2f KB", arg * g_single_k_bit);
