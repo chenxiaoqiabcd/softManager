@@ -1,9 +1,9 @@
 #include "installedWnd.h"
 
+#include "curl_download_manager.h"
 #include "event_queue_global_manager.h"
 #include "file_helper.h"
 #include "helper.h"
-#include "installPackageWnd.h"
 #include "letter_helper.h"
 #include "scheme.h"
 #include "softInfo.h"
@@ -49,6 +49,14 @@ void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 			CloseHandle(hThread);
 		}
 	}
+}
+
+LRESULT CInstalledWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if(WM_CLOSE == uMsg) {
+		CurlDownloadManager::Quit();
+	}
+
+	return CWndImpl::HandleMessage(uMsg, wParam, lParam);
 }
 
 DWORD CInstalledWnd::ThreadUpdateSoftListV2(LPVOID lParam) {

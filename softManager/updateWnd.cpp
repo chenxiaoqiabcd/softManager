@@ -2,9 +2,9 @@
 
 #include <algorithm>
 
+#include "curl_download_manager.h"
 #include "event_queue_global_manager.h"
 #include "file_helper.h"
-#include "installPackageWnd.h"
 #include "kf_log.h"
 #include "kf_str.h"
 #include "scheme.h"
@@ -56,6 +56,14 @@ void CUpdateWnd::Notify(DuiLib::TNotifyUI& msg) {
 			Close(0);
 		}
 	}
+}
+
+LRESULT CUpdateWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if(uMsg == WM_CLOSE) {
+		CurlDownloadManager::Quit();
+	}
+
+	return CWndImpl::HandleMessage(uMsg, wParam, lParam);
 }
 
 CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const UpdateInfo* info) {

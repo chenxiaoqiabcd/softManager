@@ -44,7 +44,8 @@ void CacheDataHelper::UpdateRootWithCacheFile(jsoncons::json* root) {
 		*root = jsoncons::json::parse(in);
 	}
 	catch (std::exception& e) {
-		KF_ERROR("failed update root with cache file, error: %s", e.what());
+		// 文件是空的而已，问题不大，不需要报异常
+		// KF_ERROR("failed update root with cache file, error: %s", e.what());
 	}
 }
 

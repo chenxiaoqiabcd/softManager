@@ -1,15 +1,18 @@
 #pragma once
 
+#include <memory>
 #include <string_view>
 
 #include <UIlib.h>
 
+#include <curl/curl.h>
+
+class SoftListOperatorNode;
+class CurlDownloadManager;
 class Scheme;
 
-class CSoftListElementUI : public DuiLib::CListContainerElementUI, public DuiLib::INotifyUI {
+class CSoftListElementUI : public DuiLib::CListContainerElementUI {
 public:
-	~CSoftListElementUI();
-
 	void SetScheme(Scheme* scheme);
 
 	void SetSoftName(const wchar_t* value);
@@ -39,10 +42,6 @@ public:
 protected:
 	void DoInit() override;
 
-	void NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg) const;
-
-	void Notify(DuiLib::TNotifyUI& msg) override;
-
 	static DWORD WINAPI ThreadUpdateSize(LPVOID lParam);
 
 	// 创建序号节点
@@ -54,16 +53,16 @@ protected:
 
 	DuiLib::CLabelUI* CreateLocalVersionNode() const;					// 创建本机版本节点
 
-	DuiLib::CLabelUI* CreatePackageSizeNode();					// 创建软件大小节点
+	DuiLib::CLabelUI* CreatePackageSizeNode() const;					// 创建软件大小节点
 
-	DuiLib::CHorizontalLayoutUI* CreateOperatorNode();			// 创建操作节点
-
-	void Uninstall(std::wstring_view cmd);
+	DuiLib::CControlUI* CreateOperatorNode();
 
 	DuiLib::CDuiString last_version_;
 
 	Scheme* scheme_ = nullptr;
 private:
+	SoftListOperatorNode* operator_node_ = nullptr;
+
 	DuiLib::CDuiString soft_name_;
 
 	DuiLib::CDuiString icon_;
@@ -75,10 +74,6 @@ private:
 	DuiLib::CDuiString message_;
 
 	DuiLib::CDuiString uninst_path_;
-
-	DuiLib::CButtonUI* btn_uninst_;
-
-	DuiLib::CButtonUI* btn_update_;
 
 	std::vector<std::map<std::wstring, std::wstring>> actions_;
 

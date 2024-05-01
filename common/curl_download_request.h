@@ -1,12 +1,17 @@
 #pragma once
 
+#include <condition_variable>
 #include <functional>
+#include <future>
+#include <map>
+#include <queue>
+#include <thread>
 #include <curl/curl.h>
 
 typedef std::function<int(void*, double, double, int, long long, long long)> ptrDownloadProgressFunction;
-typedef std::function<void(void*, std::wstring_view)> ptrDownloadFinishedCallback;
+typedef std::function<void(void*, const char*, std::wstring_view)> ptrDownloadFinishedCallback;
 
-typedef int (*ptrDownloadProgressSingleThreadFunction)(void* clientp, double dltotal,
+typedef int (*ptrDownloadProgressSingleThreadFunction)(void* clientp, const char* sign, double dltotal,
 													   double dlnow, double speed);
 
 struct DownloadNode
@@ -30,9 +35,10 @@ public:
 	void SetDownloadProgressCallback(const ptrDownloadProgressFunction& callback, void* data);
 
 	void SetDownloadSingleProgressCallback(const ptrDownloadProgressSingleThreadFunction& callback,
-										   void* data);
+										   void* data, const char* sign);
 
-	void SetDownloadFinishedCallback(const ptrDownloadFinishedCallback& callback, void* data);
+	void SetDownloadFinishedCallback(const ptrDownloadFinishedCallback& callback, void* data,
+									 const char* sign);
 
 	double GetContentLength(bool* accept_ranges, std::string* ptr_file_name, bool no_body = true) const;
 
@@ -65,9 +71,11 @@ private:
 
 	ptrDownloadProgressSingleThreadFunction download_progress_single_thread_callback_ = nullptr;
 	void* download_progress_single_thread_callback_data_ = nullptr;
+	std::string download_progress_single_thread_sign_;
 
 	ptrDownloadFinishedCallback download_finished_callback_ = nullptr;
 	void* download_finished_callback_data_ = nullptr;
+	std::string download_finished_callback_sign_;
 
 	inline static bool stop_download_ = false;
 

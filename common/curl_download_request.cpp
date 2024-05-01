@@ -1,5 +1,6 @@
 #include "curl_download_request.h"
 
+#include <future>
 #include <map>
 #include <mutex>
 #include <Shlwapi.h>
@@ -26,15 +27,18 @@ void CurlDownloadRequest::SetDownloadProgressCallback(const ptrDownloadProgressF
 	download_progress_callback_data_ = data;
 }
 
-void CurlDownloadRequest::SetDownloadSingleProgressCallback(const ptrDownloadProgressSingleThreadFunction& callback, void* data) {
+void CurlDownloadRequest::SetDownloadSingleProgressCallback(const ptrDownloadProgressSingleThreadFunction& callback,
+															void* data, const char* sign) {
 	download_progress_single_thread_callback_ = callback;
 	download_progress_single_thread_callback_data_ = data;
+	download_progress_single_thread_sign_ = sign;
 }
 
 void CurlDownloadRequest::SetDownloadFinishedCallback(const ptrDownloadFinishedCallback& callback,
-													  void* data) {
+													  void* data, const char* sign) {
 	download_finished_callback_ = callback;
 	download_finished_callback_data_ = data;
+	download_finished_callback_sign_ = sign;
 }
 
 struct HeaderData
@@ -272,13 +276,15 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 	}
 
 	if(nullptr != download_finished_callback_) {
-		if (download_result_code_ == CURLE_ABORTED_BY_CALLBACK || download_result_code_ == CURLE_BAD_FUNCTION_ARGUMENT) {
+		if (download_result_code_ == CURLE_ABORTED_BY_CALLBACK ||
+			download_result_code_ == CURLE_BAD_FUNCTION_ARGUMENT) {
 			// È¡ÏûÏÂÔØ
 			KF_INFO("cancel download, url: %s", url_.c_str());
 			return download_result_code_;
 		}
 
-		download_finished_callback_(download_finished_callback_data_, target_file_path);
+		download_finished_callback_(download_finished_callback_data_,
+									download_finished_callback_sign_.c_str(), target_file_path);
 	}
 
 	return download_result_code_;
@@ -338,7 +344,8 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 				return code == CURLE_OK;
 			}
 
-			download_finished_callback_(download_finished_callback_data_, target_file_path);
+			download_finished_callback_(download_finished_callback_data_,
+										download_finished_callback_sign_.c_str(), target_file_path);
 		}
 
 		KF_INFO("success download, url: %s", url_.c_str());
@@ -458,6 +465,7 @@ int CurlDownloadRequest::SingleProcessProgressFunction(void* ptr, double total_t
 
 		if(nullptr != pThis->download_progress_single_thread_callback_) {
 			result = pThis->download_progress_single_thread_callback_(pThis->download_progress_single_thread_callback_data_,
+																	  pThis->download_progress_single_thread_sign_.c_str(),
 																	  total_to_download, now_downloaded, speed);
 		} 
 	}

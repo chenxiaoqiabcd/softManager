@@ -3,8 +3,8 @@
 #include "WndImpl.h"
 #include "observerMode.h"
 
-struct UpdateInfo;
 class CUpdateListElementUI;
+struct UpdateInfo;
 class KfString;
 struct SoftInfo;
 
@@ -14,8 +14,12 @@ public:
 	~CUpdateWnd();
 protected:
 	LPCTSTR GetSkinFile() override;
+
 	void Init() override;
+
 	void Notify(DuiLib::TNotifyUI& msg) override;
+
+	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
 	CUpdateListElementUI* CreateLine(const SoftInfo& soft_it, const UpdateInfo* info);
 

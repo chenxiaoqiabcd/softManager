@@ -16,9 +16,12 @@ public:
 	void UpdateSoftInfo();
 protected:
 	LPCTSTR GetSkinFile() override;
+
 	void Init() override;
 
 	void Notify(DuiLib::TNotifyUI& msg) override;
+
+	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
 	static DWORD WINAPI ThreadUpdateSoftListV2(LPVOID lParam);
 

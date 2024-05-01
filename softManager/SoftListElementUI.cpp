@@ -3,15 +3,10 @@
 #include "event_queue_global_manager.h"
 #include "file_helper.h"
 #include "helper.h"
-#include "installPackageWnd.h"
 #include "kf_log.h"
 #include "scheme.h"
+#include "soft_list_operator_node.h"
 #include "stringHelper.h"
-#include "versionHelper.h"
-
-CSoftListElementUI::~CSoftListElementUI() {
-	m_pManager->RemoveNotifier(this);
-}
 
 void CSoftListElementUI::SetScheme(Scheme* scheme) {
 	scheme_ = scheme;
@@ -86,29 +81,12 @@ void CSoftListElementUI::SetMessage(const wchar_t* value) {
 }
 
 void CSoftListElementUI::UpdateMessage(const wchar_t* value) const {
-	const auto hor = static_cast<DuiLib::CHorizontalLayoutUI*>(GetItemAt(5));
-	const auto tab_layout = static_cast<DuiLib::CTabLayoutUI*>(hor->GetItemAt(1));
-
-	tab_layout->GetItemAt(2)->SetText(value);
-	tab_layout->GetItemAt(2)->SetToolTip(value);
-
-	tab_layout->SelectItem(2);
+	operator_node_->UpdateMessage(value);
 }
 
 void CSoftListElementUI::UpdateUpgradeInfo(std::string_view last_version,
 										   std::string_view download_url) const {
-	const auto hor = static_cast<DuiLib::CHorizontalLayoutUI*>(GetItemAt(5));
-	const auto tab_layout = static_cast<DuiLib::CTabLayoutUI*>(hor->GetItemAt(1));
-
-	const auto btn_update = static_cast<DuiLib::CButtonUI*>(tab_layout->GetItemAt(1));
-	if(nullptr == btn_update) {
-		return;
-	}
-
-	btn_update->SetUserData(CStringHelper::a2w(download_url.data()).c_str());
-	btn_update->SetToolTip(CStringHelper::a2w(last_version.data()).c_str());
-
-	tab_layout->SelectItem(1);
+	operator_node_->UpdateUpgradeInfo(last_version.data(), download_url.data());
 }
 
 void CSoftListElementUI::UpdateSize(const wchar_t* value) const {
@@ -116,8 +94,6 @@ void CSoftListElementUI::UpdateSize(const wchar_t* value) const {
 }
 
 void CSoftListElementUI::DoInit() {
-	m_pManager->AddNotifier(this);
-
 	SetFixedHeight(40);
 
 	Add(CreateNumberNode());
@@ -126,29 +102,6 @@ void CSoftListElementUI::DoInit() {
 	Add(CreateLocalVersionNode());
 	Add(CreatePackageSizeNode());
 	Add(CreateOperatorNode());
-}
-
-void CSoftListElementUI::NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg) const {
-	CInstallPackageWnd wnd;
-	wnd.SetInfo(download_url_, actions_);
-	wnd.Create(m_pManager->GetPaintWindow(), L"", UI_WNDSTYLE_DIALOG, WS_EX_WINDOWEDGE);
-	wnd.CenterWindow();
-	if (IDOK == wnd.ShowModal()) {
-		EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA, reinterpret_cast<WPARAM>(key_name_.c_str()));
-	}
-}
-
-void CSoftListElementUI::Notify(DuiLib::TNotifyUI& msg) {
-	if(msg.sType == DUI_MSGTYPE_CLICK) {
-		if(msg.pSender == btn_uninst_) {
-			Uninstall(uninst_path_.GetData());
-			return;
-		}
-
-		if(msg.pSender == btn_update_) {
-			NotifyClickedUpdateButton(msg);
-		}
-	}
 }
 
 DuiLib::CLabelUI* CSoftListElementUI::CreateNumberNode() {
@@ -205,104 +158,24 @@ DuiLib::CLabelUI* CSoftListElementUI::CreateLocalVersionNode() const {
 	return label_local_version;
 }
 
-DuiLib::CLabelUI* CSoftListElementUI::CreatePackageSizeNode() {
+DuiLib::CLabelUI* CSoftListElementUI::CreatePackageSizeNode() const {
 	DuiLib::CLabelUI* label_size = new DuiLib::CLabelUI;
 	scheme_->Refresh(label_size);
 	return label_size;
 }
 
-DuiLib::CHorizontalLayoutUI* CSoftListElementUI::CreateOperatorNode() {
-	DuiLib::CHorizontalLayoutUI* hor = new DuiLib::CHorizontalLayoutUI;
+DuiLib::CControlUI* CSoftListElementUI::CreateOperatorNode() {
+	operator_node_ = new SoftListOperatorNode;
 
-	btn_uninst_ = new DuiLib::CButtonUI;
+	operator_node_->SetScheme(scheme_);
+	operator_node_->SetMessage(message_);
+	operator_node_->SetKeyName(key_name_.c_str());
+	operator_node_->SetUninstallPath(uninst_path_);
+	operator_node_->SetLocalVersion(CStringHelper::w2a(local_version_.GetData()).c_str());
+	operator_node_->SetUpdateInfo(CStringHelper::w2a(last_version_.GetData()).c_str(),
+								  CStringHelper::w2a(download_url_.GetData()).c_str(), actions_, cracked_);
 
-	btn_uninst_->SetText(TEXT("卸载"));
-	btn_uninst_->SetFixedWidth(60);
-	btn_uninst_->SetFixedHeight(32);
-	btn_uninst_->SetPadding({ 4, 4, 0, 0 });
-	btn_uninst_->SetBorderColor(0xFF999999);
-	btn_uninst_->SetBorderSize(1);
-	scheme_->Refresh(btn_uninst_);
-
-	hor->Add(btn_uninst_);
-
-	DuiLib::CTabLayoutUI* tab_layout = new DuiLib::CTabLayoutUI;
-
-	btn_update_ = new DuiLib::CButtonUI;
-
-	tab_layout->Add(new DuiLib::CControlUI);
-
-	btn_update_->SetName(L"update_btn");
-
-	if(cracked_) {
-		btn_update_->SetText(TEXT("更新(破解版)"));
-	}
-	else {
-		btn_update_->SetText(TEXT("更新"));
-	}
-
-	btn_update_->SetPadding({ 4, 4, 4, 4 });
-	btn_update_->SetToolTip(last_version_);
-	scheme_->Refresh(btn_update_);
-
-	tab_layout->Add(btn_update_);
-
-	DuiLib::CLabelUI* label_info = new DuiLib::CLabelUI;
-
-	label_info->SetAttribute(L"endellipsis", L"true");
-	label_info->SetTextPadding({ 5,0,0,0 });
-	label_info->SetText(message_);
-	label_info->SetToolTip(message_);
-	scheme_->Refresh(label_info);
-
-	tab_layout->Add(label_info);
-
-	if (!message_.IsEmpty()) {
-		tab_layout->SelectItem(2);
-	}
-
-	VersionHelper local_version(CStringHelper::w2a(local_version_.GetData()).c_str());
-	VersionHelper remote_version(CStringHelper::w2a(last_version_.GetData()).c_str());
-
-	if (remote_version > local_version) {
-		tab_layout->SelectItem(1);
-	}
-
-	hor->Add(tab_layout);
-
-	return hor;
-}
-
-void CSoftListElementUI::Uninstall(std::wstring_view cmd) {
-	if(cmd.empty()) {
-		return;
-	}
-
-	const auto cmd_len = cmd.length();
-
-	if (0 == wcscmp(cmd.substr(0, 1).data(), L"\"") &&
-		0 == wcscmp(cmd.substr(cmd_len - 1, 0).data(), L"\"")) {
-		cmd = cmd.substr(1, cmd_len - 2);
-	}
-
-	if(PathFileExists(cmd.data())) {
-		Helper::ExecuteApplication(cmd.data(), L"");
-	}
-	else {
-		int nArgs = 0;
-		const LPWSTR* lpszCmdLine = CommandLineToArgvW(cmd.data(), &nArgs);
-		if (1 == nArgs) {
-			Helper::ExecuteApplication(lpszCmdLine[0], L"");
-		}
-		else if (2 == nArgs) {
-			Helper::ExecuteApplication(lpszCmdLine[0], lpszCmdLine[1]);
-		}
-		else {
-			assert(false && L"卸载程序执行多个参数这个情况暂未考虑");
-		}
-	}
-
-	EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA, reinterpret_cast<WPARAM>(key_name_.c_str()));
+	return operator_node_;
 }
 
 
@@ -316,8 +189,6 @@ void CSoftListElementUI::Uninstall(std::wstring_view cmd) {
 
 
 void CUpdateListElementUI::DoInit() {
-	m_pManager->AddNotifier(this);
-
 	SetFixedHeight(40);
 
 	Add(CreateNumberNode());

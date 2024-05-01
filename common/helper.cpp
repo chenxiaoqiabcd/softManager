@@ -296,7 +296,7 @@ void Helper::CreateDesktopIcon(const std::wstring& name) {
 
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
 		wchar_t file_name[MAX_PATH];
-		memset(file_name, 0, MAX_PATH * sizeof(wchar_t));
+		ZeroMemory(file_name, sizeof(file_name));
 		GetModuleFileName(nullptr, file_name, MAX_PATH);
 
 		psl->SetPath(file_name);
