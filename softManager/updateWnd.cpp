@@ -4,10 +4,8 @@
 
 #include "curl_download_manager.h"
 #include "event_queue_global_manager.h"
-#include "file_helper.h"
-#include "kf_log.h"
+#include "log_helper.h"
 #include "kf_str.h"
-#include "scheme.h"
 #include "softInfo.h"
 #include "SoftListElementUI.h"
 #include "stringHelper.h"

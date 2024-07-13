@@ -50,6 +50,8 @@ public:
 	static std::wstring GetCacheFile(const wchar_t* file_name);
 
 	static time_t FileTimeToTimeStamp(const FILETIME& file_time);
+
+	static std::string GetRoamingDir();
 private:
 	static std::string GetCacheFolder(const char* folder_name = "softManager");
 

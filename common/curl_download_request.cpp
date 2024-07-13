@@ -1,13 +1,12 @@
 #include "curl_download_request.h"
 
-#include <future>
 #include <map>
 #include <mutex>
 #include <Shlwapi.h>
 #include <thread>
 
 #include "helper.h"
-#include "kf_log.h"
+#include "log_helper.h"
 #include "kf_str.h"
 #include "request_helper.h"
 #include "stringHelper.h"

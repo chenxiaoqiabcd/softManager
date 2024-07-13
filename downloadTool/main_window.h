@@ -19,7 +19,7 @@ protected:
 
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
-	static void OnFinishedCallback(void* ptr, std::wstring_view file_path);
+	static void OnFinishedCallback(void* ptr, const char* sign, std::wstring_view file_path);
 
 	static int OnProgressSingleThreadCallback(void* ptr, double total_to_download,
 											  double now_downloaded, double, double);

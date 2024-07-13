@@ -1,9 +1,7 @@
 #include <memory>
 #include <Windows.h>
 
-#include <UIlib.h>
-
-#include "kf_log.h"
+#include "log_helper.h"
 #include "main_window.h"
 #include "resource.h"
 

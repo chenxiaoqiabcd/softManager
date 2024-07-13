@@ -43,6 +43,7 @@ target_include_directories(softManager PRIVATE
 	${PROJECT_SOURCE_DIR}/third_party
 	${PROJECT_SOURCE_DIR}/third_party/curl/include
 	${PROJECT_SOURCE_DIR}/third_party/DuiLib/src
+	${PROJECT_SOURCE_DIR}/third_party/openssl-openssl-3.3.1/include
 )
 
 SET_TARGET_PROPERTIES(softManager   PROPERTIES  LINK_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ignore:4099")
@@ -65,9 +66,12 @@ target_link_libraries(softManager
 
 	optimized ${PROJECT_SOURCE_DIR}/third_party/curl/lib/libcurl.lib
 	optimized ${PROJECT_SOURCE_DIR}/third_party/curl/lib/zlib.lib
+
+	${PROJECT_SOURCE_DIR}/third_party/openssl-openssl-3.3.1/lib/VC/x86/MT/libcrypto_static.lib
+	${PROJECT_SOURCE_DIR}/third_party/openssl-openssl-3.3.1/lib/VC/x86/MT/libssl_static.lib
 )
 
-# add_custom_command(TARGET softManager POST_BUILD
-# 	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
-# 	COMMENT "editbin successed!!!"
-# )
+add_custom_command(TARGET softManager POST_BUILD
+	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
+	COMMENT "editbin successed!!!"
+)

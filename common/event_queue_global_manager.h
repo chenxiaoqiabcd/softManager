@@ -9,6 +9,7 @@ enum {
 	EVENT_UPDATE_SOFT_LIST,				// 更新软件列表
 	EVENT_REFRESH_UPDATE_WND_SOFT_LIST,	// 更新软件列表
 	EVENT_UPDATE_SOFT_DATA,
+	EVENT_INSTALL_PACKAGE,				// 执行安装
 };
 
 enum class EventType {

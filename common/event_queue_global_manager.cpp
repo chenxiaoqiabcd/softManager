@@ -2,10 +2,8 @@
 
 #include <algorithm>
 
-#include <UIlib.h>
-
 #include "define.h"
-#include "kf_log.h"
+#include "log_helper.h"
 
 struct EventInfo {
 	int id;

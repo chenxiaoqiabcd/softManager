@@ -33,7 +33,7 @@ void CInstalledWnd::Init() {
 
 void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 	if(msg.sType == DUI_MSGTYPE_CLICK) {
-		wstring strName = msg.pSender->GetName();
+		wstring strName = msg.pSender->GetName().GetData();
 		
 		if (0 == _wcsicmp(strName.c_str(), L"closebtn")) {
 			Close(0);
@@ -134,7 +134,6 @@ void CInstalledWnd::UpdateDate(bool need_update, void* data) {
 }
 
 void CInstalledWnd::ClearData() {
-
 }
 
 void CInstalledWnd::ClearData(void* data) {
@@ -191,8 +190,12 @@ void CInstalledWnd::UpdateSize(const wchar_t* soft_name, uint8_t bit, const wcha
 	for (int n = 0; n < count; ++n) {
 		const CSoftListElementUI* line = static_cast<CSoftListElementUI*>(pList->GetItemAt(n));
 
-		if (line->GetBit() == bit && CStringHelper::IsMatch(line->GetSoftName().GetData(),
-															soft_name)) {
+		if(nullptr == line) {
+			break;
+		}
+
+		if (line->GetBit() == bit
+			&& CStringHelper::IsMatch(line->GetSoftName().GetData(), soft_name)) {
 			const long long size = GetInstallPathSize(install_path, uninstall_path);
 			line->UpdateSize(Helper::ToWStringSize(size).c_str());
 			break;

@@ -3,8 +3,6 @@
 #include <cassert>
 #include <tuple>
 
-#include "kf_log.h"
-
 MemoryPool::~MemoryPool() {
 	for(auto& it : pool_) {
 		assert(it.data == nullptr);

@@ -1,9 +1,6 @@
 #include "SoftListElementUI.h"
 
-#include "event_queue_global_manager.h"
 #include "file_helper.h"
-#include "helper.h"
-#include "kf_log.h"
 #include "scheme.h"
 #include "soft_list_operator_node.h"
 #include "stringHelper.h"

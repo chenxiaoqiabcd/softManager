@@ -56,7 +56,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return CWndImpl::HandleMessage(uMsg, wParam, lParam);
 }
 
-void MainWindow::OnFinishedCallback(void* ptr, std::wstring_view file_path) {
+void MainWindow::OnFinishedCallback(void* ptr, const char* sign, std::wstring_view file_path) {
 	const auto pThis = static_cast<MainWindow*>(ptr);
 
 	// if (StrStrIW(file_path.data(), L".exe") || StrStrIW(file_path.data(), L".msi")) {
@@ -202,8 +202,7 @@ bool MainWindow::DownloadTask(const char* url, const wchar_t* dest_folder) {
 	wcscpy(file_path, dest_folder);
 	PathAppend(file_path, CStringHelper::a2w(file_name).c_str());
 
-	download_request_->SetDownloadFinishedCallback(OnFinishedCallback,
-												   this);
+	download_request_->SetDownloadFinishedCallback(OnFinishedCallback, this, url);
 
 	if (accept_ranges && file_length > 0) {
 		const auto count = std::thread::hardware_concurrency();

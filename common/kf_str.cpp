@@ -2,10 +2,9 @@
 
 #include <Windows.h>
 #include <cassert>
-#include <cstdarg>
 #include <variant>
 
-#include "kf_log.h"
+#include "log_helper.h"
 #include "mp.h"
 #include "stringHelper.h"
 
@@ -810,7 +809,7 @@ uint32_t KfString::GetCapacity() const {
 }
 
 bool KfString::IsEmpty() const {
-	return value_ == '\0';
+	return value_ == 0;
 }
 
 const char* KfString::GetString() const {
@@ -855,7 +854,7 @@ std::vector<KfString> KfString::Split(const char* filter) const {
 	KfString temp{ value_ };
 
 	char* data = strtok(temp.value_, filter);
-	while(data != '\0') {
+	while(data != 0) {
 		result.emplace_back(data);
 		data = strtok(nullptr, filter);
 	}

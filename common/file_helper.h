@@ -12,12 +12,6 @@ namespace Gdiplus
 
 class FileHelper {
 public:
-	static std::vector<char> ReadData(const char* file_path);
-
-	static std::streampos GetSize(const char* file_path);
-
-	static std::streampos GetSize(std::wstring_view file_path);
-
 	static std::wstring GetIconWithExePath(const wchar_t* szFile);
 
 	static std::wstring GetIconWithIcoPath(const wchar_t* path);

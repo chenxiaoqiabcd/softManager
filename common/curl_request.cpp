@@ -1,9 +1,8 @@
 #include "curl_request.h"
 
-#include <iomanip>
 #include <Shlwapi.h>
 
-#include "kf_log.h"
+#include "log_helper.h"
 #include "kf_str.h"
 #include "request_helper.h"
 

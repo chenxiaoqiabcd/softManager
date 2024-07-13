@@ -2,13 +2,11 @@
 
 #include <cstdio>
 #include <memory>
-#include <curl/curl.h>
 
 #include <Shlwapi.h>
 #include <thread>
 
-#include "helper.h"
-#include "kf_log.h"
+#include "log_helper.h"
 #include "kf_str.h"
 #include "stringHelper.h"
 
@@ -47,16 +45,16 @@ void CurlDownload::Download(const char* url, const char* folder_path, const char
 		file_name = default_file_name;
 	}
 
-	char file_path[MAX_PATH];
-	ZeroMemory(file_path, sizeof(file_path));
-	strcpy_s(file_path, folder_path);
-	PathAppendA(file_path, file_name.c_str());
+	auto file_path = std::shared_ptr<char>(new char[MAX_PATH]);
+	ZeroMemory(file_path.get(), sizeof(file_path));
+	strcpy_s(file_path.get(), MAX_PATH, folder_path);
+	PathAppendA(file_path.get(), file_name.c_str());
 
-	auto file = fopen(file_path, "wb");
+	auto file = fopen(file_path.get(), "wb");
 	if(nullptr == file) {
-		finished_callback_(user_ptr_, url, file_path, CURLE_OK, 0);
+		finished_callback_(user_ptr_, url, file_path.get(), CURLE_OK, 0);
 
-		KF_ERROR("failed open file: %s", file_path);
+		KF_ERROR("failed open file: %s", file_path.get());
 		return;
 	}
 
@@ -89,12 +87,13 @@ void CurlDownload::Download(const char* url, const char* folder_path, const char
 
 	curl_easy_cleanup(curl_);
 
-	finished_callback_(user_ptr_, url, file_path, code, http_code);
+	finished_callback_(user_ptr_, url, file_path.get(), code, http_code);
 }
 
 void CurlDownload::Pause() {
 	pause_download_ = true;
 	KF_INFO("暂停下载 url: %s", url_.c_str());
+
 	curl_easy_pause(curl_, CURLPAUSE_RECV | CURLPAUSE_SEND);
 }
 
@@ -167,6 +166,7 @@ void CurlDownloadManager::PauseTask(const char* url) {
 	auto it_find = download_infos.find(url);
 	if(it_find != download_infos.end()) {
 		it_find->second.download->Pause();
+		it_find->second.callback_info.notify_callback(it_find->second.callback_info.user_ptr, url, "已暂停");
 	}
 }
 
@@ -174,6 +174,8 @@ void CurlDownloadManager::ResumeTask(const char* url) {
 	auto it_find = download_infos.find(url);
 	if (it_find != download_infos.end()) {
 		it_find->second.download->Resume();
+		it_find->second.callback_info.notify_callback(it_find->second.callback_info.user_ptr,
+													  url, "继续下载");
 	}
 }
 

@@ -1,8 +1,8 @@
 #include "update_main_window.h"
 
-#include <jsoncons/json.hpp>
+#include <jsoncons/basic_json.hpp>
 
-#include "kf_log.h"
+#include "log_helper.h"
 #include "kf_str.h"
 #include "stringHelper.h"
 

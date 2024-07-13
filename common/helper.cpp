@@ -1,16 +1,17 @@
 #include "helper.h"
 
 #include <intrin.h>
-#include <ShlObj.h>
 #include <Shlwapi.h>
 #include <tchar.h>
+#include <WtsApi32.h>
 #include <atlcomcli.h>
-#include <filesystem>
+#include <shlobj_core.h>
 
 #include "event_queue_global_manager.h"
+#include "kf_str.h"
 #include "stringHelper.h"
 
-#include "kf_str.h"
+#pragma comment(lib, "Wtsapi32")
 
 bool Helper::ExecuteApplication(const wchar_t* file_path, const wchar_t* argument) {
 	SHELLEXECUTEINFO sei;
@@ -414,6 +415,28 @@ time_t Helper::FileTimeToTimeStamp(const FILETIME& file_time) {
 	time.tm_isdst = -1;
 
 	return mktime(&time);
+}
+
+std::string Helper::GetRoamingDir() {
+	char szPath[1024] = { 0 };
+	DWORD dwSessionId = WTSGetActiveConsoleSessionId();
+	HANDLE hToken;
+	HRESULT hr = S_FALSE;
+	if (WTSQueryUserToken(dwSessionId, &hToken))
+	{
+		hr = SHGetFolderPathA(NULL, CSIDL_APPDATA, hToken, SHGFP_TYPE_CURRENT, szPath);
+		CloseHandle(hToken);
+	}
+	else
+	{
+		hr = SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, szPath);
+	}
+
+	if (SUCCEEDED(hr)) {
+		return szPath;
+	}
+
+	return "";
 }
 
 // private

@@ -8,6 +8,140 @@
 #include "stringHelper.h"
 #include "versionHelper.h"
 
+void UpdateButtonUI::SetDownloadUrl(const char* url) {
+	download_url_ = url;
+}
+
+void UpdateButtonUI::SetKeyName(const wchar_t* value) {
+	key_name_ = value;
+}
+
+void UpdateButtonUI::SetActions(const std::vector<std::map<std::wstring, std::wstring>>& actions) {
+	actions_ = actions;
+}
+
+void UpdateButtonUI::DoInit() {
+	DuiLib::CButtonUI::DoInit();
+
+	m_pManager->AddNotifier(this);
+
+	EventQueueInstance->AppendNewThreadListener(EVENT_INSTALL_PACKAGE, OnInstallPackage, this);
+}
+
+void UpdateButtonUI::NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg) {
+	if (CurlDownloadManager::InDownloadList(download_url_.c_str())) {
+		// 如果暂停了就继续下载，如果没暂停就暂停下载
+		if (CurlDownloadManager::IsPaused(download_url_.c_str())) {
+			CurlDownloadManager::ResumeTask(download_url_.c_str());
+		}
+		else {
+			CurlDownloadManager::PauseTask(download_url_.c_str());
+		}
+
+		return;
+	}
+
+	CurlDownloadManager download_manager;
+	download_manager.AddTask(download_url_.c_str(),
+							 OnDownloadProgress, OnDownloadFinished, OnDownloadNotify, this);
+}
+
+void UpdateButtonUI::Notify(DuiLib::TNotifyUI& msg) {
+	if(msg.pSender == this && msg.sType == DUI_MSGTYPE_CLICK) {
+		NotifyClickedUpdateButton(msg);
+	}
+}
+
+int UpdateButtonUI::OnDownloadProgress(void* user_ptr, const char* url,
+											 double total_download, double now_download, double speed) {
+	auto pThis = static_cast<UpdateButtonUI*>(user_ptr);
+
+	if (pThis->download_url_ != url) {
+		return 0;
+	}
+
+	if (now_download > 0.0) {
+		auto buffer = KfString::Format("%0.2lf%%", now_download / total_download * 100.0f);
+		pThis->SetText(buffer.GetWString().c_str());
+		return 0;
+	}
+
+	pThis->SetText(L"0%");
+
+	return 0;
+}
+
+void UpdateButtonUI::OnDownloadFinished(void* user_ptr, const char* url, const char* file_path,
+									  CURLcode code, int http_code) {
+	auto pThis = static_cast<UpdateButtonUI*>(user_ptr);
+	if (pThis->download_url_ != url) {
+		return;
+	}
+
+	if(200 != http_code) {
+		// TODO: 发送请求给管理员更新下载链接
+	}
+
+	if(CURLE_OK != code || 200 != http_code) {
+		auto buffer = KfString::Format(L"curl code: %d, http code: %d", code, http_code);
+		pThis->SetText(L"下载失败");
+		pThis->SetToolTip(buffer.GetWString().c_str());
+		return;
+	}
+
+	EventQueueInstance->PostEvent(EVENT_INSTALL_PACKAGE, reinterpret_cast<WPARAM>(file_path));
+}
+
+void UpdateButtonUI::OnDownloadNotify(void* user_ptr, const char* url, const char* msg) {
+	auto pThis = static_cast<UpdateButtonUI*>(user_ptr);
+	if (pThis->download_url_ != url) {
+		return;
+	}
+
+	auto buffer = CStringHelper::a2w(msg);
+	pThis->SetText(buffer.c_str());
+}
+
+DWORD UpdateButtonUI::OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr) {
+	auto pThis = static_cast<UpdateButtonUI*>(user_ptr);
+
+	auto file_path = reinterpret_cast<const char*>(wParam);
+
+	pThis->SetText(L"开始安装");
+
+	auto path = CStringHelper::a2w(file_path);
+
+	if (StrStrIW(path.c_str(), L".exe") || StrStrIW(path.c_str(), L".msi")) {
+		Helper::ExecuteApplication(path.c_str(), L"");
+		pThis->SetText(L"安装完成");
+		EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA,
+									  reinterpret_cast<WPARAM>(pThis->key_name_.c_str()));
+		return 0;
+	}
+
+	for (auto& it : pThis->actions_) {
+		if (it[L"name"] == L"clipboard") {
+			Helper::UpdateClipboard(CStringHelper::w2a(it[L"text"]));
+		}
+	}
+
+	Helper::OpenFolderAndSelectFile(path.c_str());
+
+	pThis->SetText(L"下载完成");
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
 SoftListOperatorNode::~SoftListOperatorNode() {
 	m_pManager->RemoveNotifier(this);
 }
@@ -41,7 +175,8 @@ void SoftListOperatorNode::SetUpdateInfo(const char* last_version, const char* d
 	cracked_ = cracked;	
 }
 
-void SoftListOperatorNode::UpdateMessage(const wchar_t* value) const {
+void SoftListOperatorNode::UpdateMessage(const wchar_t* value) {
+	message_ = value;
 	auto update_tab_layout = static_cast<DuiLib::CTabLayoutUI*>(GetItemAt(1));
 
 	auto label_info = update_tab_layout->GetItemAt(2);
@@ -49,7 +184,7 @@ void SoftListOperatorNode::UpdateMessage(const wchar_t* value) const {
 	label_info->SetText(value);
 	label_info->SetToolTip(value);
 
-	update_tab_layout->SelectItem(2);
+	UpdateState();
 }
 
 void SoftListOperatorNode::UpdateUpgradeInfo(const char* last_version,
@@ -59,18 +194,7 @@ void SoftListOperatorNode::UpdateUpgradeInfo(const char* last_version,
 
 	btn_update_->SetToolTip(CStringHelper::a2w(last_version).c_str());
 
-	auto update_tab_layout = static_cast<DuiLib::CTabLayoutUI*>(GetItemAt(1));
-
-	VersionHelper local_version(local_version_.c_str());
-	VersionHelper remote_version(last_version_.c_str());
-
-	if (remote_version > local_version) {
-		// 显示更新按钮
-		update_tab_layout->SelectItem(1);
-	}
-	else {
-		// 该软件暂未加入更新计划
-	}
+	UpdateState();
 }
 
 void SoftListOperatorNode::Init() {
@@ -92,122 +216,20 @@ void SoftListOperatorNode::Init() {
 	// page 1: 更新提示
 	tab_layout->Add(btn_update_);
 
-	VersionHelper local_version(local_version_.c_str());
-	VersionHelper remote_version(last_version_.c_str());
-
-	if (remote_version > local_version) {
-		// 显示更新按钮
-		tab_layout->SelectItem(1);
-	}
-	else {
-		// 该软件暂未加入更新计划
-	}
-
 	// page 2: 无需更新或者其他异常提醒
 	tab_layout->Add(CreateInfoLabel());
 
-	if (!message_.empty()) {
-		// 无需更新之类的描述
-		tab_layout->SelectItem(2);
-	}
-
 	Add(tab_layout);
-}
 
-void SoftListOperatorNode::NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg) {
-	if (CurlDownloadManager::InDownloadList(download_url_.c_str())) {
-		if (CurlDownloadManager::IsPaused(download_url_.c_str())) {
-			CurlDownloadManager::ResumeTask(download_url_.c_str());
-		}
-		else {
-			CurlDownloadManager::PauseTask(download_url_.c_str());
-		}
-
-		return;
-	}
-
-	CurlDownloadManager download_manager;
-	download_manager.AddTask(download_url_.c_str(),
-							 OnDownloadProgress, OnDownloadFinished, OnDownloadNotify, this);
+	UpdateState();
 }
 
 void SoftListOperatorNode::Notify(DuiLib::TNotifyUI& msg) {
 	if (msg.sType == DUI_MSGTYPE_CLICK) {
 		if (msg.pSender == btn_uninstall_) {
 			Uninstall(uninstall_path_);
-			return;
-		}
-
-		if (msg.pSender == btn_update_) {
-			NotifyClickedUpdateButton(msg);
 		}
 	}
-}
-
-int SoftListOperatorNode::OnDownloadProgress(void* user_ptr, const char* url,
-										   double total_download, double now_download, double speed) {
-	auto pThis = static_cast<SoftListOperatorNode*>(user_ptr);
-
-	if (pThis->download_url_ != url) {
-		return 0;
-	}
-
-	if (now_download > 0.0) {
-		auto buffer = KfString::Format("%0.2lf%%", now_download / total_download * 100.0f);
-		pThis->btn_update_->SetText(buffer.GetWString().c_str());
-		return 0;
-	}
-
-	pThis->btn_update_->SetText(L"0%");
-
-	return 0;
-}
-
-void SoftListOperatorNode::OnDownloadFinished(void* user_ptr, const char* url, const char* file_path,
-											  CURLcode code, int http_code) {
-	auto pThis = static_cast<SoftListOperatorNode*>(user_ptr);
-	if (pThis->download_url_ != url) {
-		return;
-	}
-
-	if(CURLE_OK != code || 200 != http_code) {
-		pThis->btn_update_->SetText((std::to_wstring(code) + std::to_wstring(http_code) + L"done.").c_str());
-		return;
-	}
-
-	pThis->btn_update_->SetText(L"开始安装");
-
-	auto path = CStringHelper::a2w(file_path);
-
-	if (StrStrIA(file_path, ".exe") || StrStrIA(file_path, ".msi")) {
-		Helper::ExecuteApplication(path.c_str(), L"");
-		pThis->btn_update_->SetText(L"安装完成");
-		EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA,
-									  reinterpret_cast<WPARAM>(pThis->key_name_.c_str()));
-		return;
-	}
-
-	for (auto& it : pThis->actions_) {
-		auto name = it[L"name"];
-
-		if (name == L"clipboard") {
-			Helper::UpdateClipboard(CStringHelper::w2a(it[L"text"]));
-		}
-	}
-
-	Helper::OpenFolderAndSelectFile(path.c_str());
-
-	pThis->btn_update_->SetText(L"下载完成");
-}
-
-void SoftListOperatorNode::OnDownloadNotify(void* user_ptr, const char* url, const char* msg) {
-	auto pThis = static_cast<SoftListOperatorNode*>(user_ptr);
-	if(pThis->download_url_ != url) {
-		return;
-	}
-
-	auto buffer = CStringHelper::a2w(msg);
-	pThis->btn_update_->SetText(buffer.c_str());
 }
 
 DuiLib::CButtonUI* SoftListOperatorNode::CreateUninstallButton() const {
@@ -225,7 +247,11 @@ DuiLib::CButtonUI* SoftListOperatorNode::CreateUninstallButton() const {
 }
 
 DuiLib::CButtonUI* SoftListOperatorNode::CreateUpdateButton() const {
-	auto btn_update = new DuiLib::CButtonUI;
+	auto btn_update = new UpdateButtonUI;
+
+	btn_update->SetDownloadUrl(download_url_.c_str());
+	btn_update->SetKeyName(key_name_.c_str());
+	btn_update->SetActions(actions_);
 
 	btn_update->SetName(L"update_btn");
 
@@ -285,4 +311,24 @@ void SoftListOperatorNode::Uninstall(std::wstring_view cmd) {
 	}
 
 	EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA, reinterpret_cast<WPARAM>(key_name_.c_str()));
+}
+
+void SoftListOperatorNode::UpdateState() const {
+	auto update_tab_layout = static_cast<DuiLib::CTabLayoutUI*>(GetItemAt(1));
+
+	VersionHelper local_version(local_version_.c_str());
+	VersionHelper remote_version(last_version_.c_str());
+
+	if (remote_version > local_version) {
+		// 显示更新按钮
+		update_tab_layout->SelectItem(1);
+	}
+	else {
+		// 该软件暂未加入更新计划
+	}
+
+	if (!message_.empty()) {
+		// 无需更新之类的描述
+		update_tab_layout->SelectItem(2);
+	}
 }

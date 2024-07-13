@@ -22,6 +22,6 @@ public:
 
 	static std::string GetHost();
 private:
-	inline static char* ip_ = "https://39.100.95.114";
+	inline static std::string ip_ = "https://39.100.95.114";
 	// inline static char* ip_ = "http://localhost";
 };

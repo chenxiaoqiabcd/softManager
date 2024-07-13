@@ -1,44 +1,16 @@
 #include "file_helper.h"
 
 #include <filesystem>
-#include <fstream>
-
 #include <gdiplus.h>
-#include <ShlObj.h>
+#include <shlobj_core.h>
 #include <Shlwapi.h>
 
 #include "helper.h"
 #include "kf_str.h"
+#include "md_5.h"
+#include "stringHelper.h"
 
 #pragma comment(lib, "Version.lib")
-
-std::vector<char> FileHelper::ReadData(const char* file_path) {
-	std::ifstream file(file_path, std::ios::in | std::ios::binary);
-	file.seekg(0, std::ios::end);
-	const auto end_pos = file.tellg();
-	file.seekg(0, std::ios::beg);
-
-	std::vector<char> result;
-	result.resize(end_pos);
-	file.read(result.data(), end_pos);
-	return result;
-}
-
-std::streampos FileHelper::GetSize(const char* file_path) {
-	std::ifstream file(file_path);
-	file.seekg(0, std::ios::end);
-	const auto dw_file_size = file.tellg();
-	file.close();
-	return dw_file_size;
-}
-
-std::streampos FileHelper::GetSize(std::wstring_view file_path) {
-	std::wifstream file(file_path.data());
-	file.seekg(0, std::ios::end);
-	const auto dw_file_size = file.tellg();
-	file.close();
-	return dw_file_size;
-}
 
 std::wstring FileHelper::GetIconWithExePath(const wchar_t* szFile) {
 	const HICON hIcon = ::ExtractIcon(GetModuleHandle(nullptr), szFile, 0);
@@ -46,19 +18,15 @@ std::wstring FileHelper::GetIconWithExePath(const wchar_t* szFile) {
 		return L"";
 	}
 
-	KfString file_name(PathFindFileName(szFile));
+	KfString file_name(KF::MD5(CStringHelper::w2a(szFile)).toString().c_str());
 	file_name.Append(".png");
 
 	const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
-	auto unique_name = Helper::MakeUniqueName(temp_path.c_str());
-
-	if (!SaveIconToFile(hIcon, unique_name.c_str())) {
+	if (!SaveIconToFile(hIcon, temp_path.c_str())) {
 		return L"";
 	}
-
-	MoveFileEx(unique_name.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
-	return unique_name;
+	return temp_path;
 }
 
 std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
@@ -67,18 +35,15 @@ std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
 		return L"";
 	}
 
-	KfString file_name_temp(PathFindFileName(path));
-	file_name_temp.Append(".png");
+	KfString file_name(KF::MD5(CStringHelper::w2a(path)).toString().c_str());
+	file_name.Append(".png");
 
-	auto bitmap_path = Helper::GetCacheFile(file_name_temp.GetWString().c_str());
-
-	bitmap_path = Helper::MakeUniqueName(bitmap_path.c_str());
+	auto bitmap_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
 	if (!SaveIconToFile(icon, bitmap_path.c_str())) {
 		return L"";
 	}
 
-	MoveFileEx(bitmap_path.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
 	return bitmap_path;
 }
 
@@ -92,16 +57,13 @@ std::wstring FileHelper::GetIconWithDllPath(const wchar_t* path, int index) {
 
 	HICON hIcon = ExtractIcon(GetModuleHandle(nullptr), path, index);
 	if (hIcon != nullptr) {
-		KfString file_name(PathFindFileName(path));
+		KfString file_name(KF::MD5(CStringHelper::w2a(path)).toString().c_str());
 		file_name.Append(".png");
 
 		const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
-		auto unique_name = Helper::MakeUniqueName(temp_path.c_str());
-
-		if (SaveIconToFile(hIcon, unique_name.c_str())) {
-			MoveFileEx(unique_name.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
-			return unique_name;
+		if (SaveIconToFile(hIcon, temp_path.c_str())) {
+			return temp_path;
 		}
 	}
 

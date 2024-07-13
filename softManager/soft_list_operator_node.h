@@ -8,6 +8,47 @@
 
 class Scheme;
 
+class UpdateButtonUI : public DuiLib::CButtonUI, public DuiLib::INotifyUI
+{
+public:
+	void SetDownloadUrl(const char* url);
+
+	void SetKeyName(const wchar_t* value);
+
+	void SetActions(const std::vector<std::map<std::wstring, std::wstring>>& actions);
+protected:
+	void DoInit() override;
+
+	void NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg);
+
+	void Notify(DuiLib::TNotifyUI& msg) override;
+private:
+	static int OnDownloadProgress(void* user_ptr, const char* url,
+								  double total_download, double now_download, double speed);
+
+	static void OnDownloadFinished(void* user_ptr, const char* url, const char* file_path,
+								   CURLcode code, int http_code);
+
+	static void OnDownloadNotify(void* user_ptr, const char* url, const char* msg);
+
+	static DWORD OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr);
+
+	std::string download_url_;
+	std::wstring key_name_;
+
+	std::vector<std::map<std::wstring, std::wstring>> actions_;
+};
+
+
+
+
+
+
+
+
+
+
+
 class SoftListOperatorNode : public DuiLib::CHorizontalLayoutUI, public DuiLib::INotifyUI {
 public:
 	~SoftListOperatorNode() override;
@@ -25,23 +66,13 @@ public:
 	void SetUpdateInfo(const char* last_version, const char* download_url,
 					   const std::vector<std::map<std::wstring, std::wstring>>& actions, bool cracked);
 
-	void UpdateMessage(const wchar_t* value) const;
+	void UpdateMessage(const wchar_t* value);
 
 	void UpdateUpgradeInfo(const char* last_version, const char* download_url);
 protected:
 	void Init() override;
 
-	void NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg);
-
 	void Notify(DuiLib::TNotifyUI& msg) override;
-
-	static int OnDownloadProgress(void* user_ptr, const char* url,
-								  double total_download, double now_download, double speed);
-
-	static void OnDownloadFinished(void* user_ptr, const char* url, const char* file_path,
-								   CURLcode code, int http_code);
-
-	static void OnDownloadNotify(void* user_ptr, const char* url, const char* msg);
 private:
 	DuiLib::CButtonUI* CreateUninstallButton() const;
 
@@ -51,8 +82,10 @@ private:
 
 	void Uninstall(std::wstring_view cmd);
 
-	DuiLib::CButtonUI* btn_uninstall_;
-	DuiLib::CButtonUI* btn_update_;
+	void UpdateState() const;
+
+	DuiLib::CButtonUI* btn_uninstall_ = nullptr;
+	DuiLib::CButtonUI* btn_update_ = nullptr;
 
 	Scheme* scheme_ = nullptr;
 

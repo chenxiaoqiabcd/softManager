@@ -6,7 +6,7 @@
 #include "file_helper.h"
 #include "helper.h"
 #include "installedWnd.h"
-#include "kf_log.h"
+#include "log_helper.h"
 #include "kf_str.h"
 #include "request_helper.h"
 #include "scheme.h"

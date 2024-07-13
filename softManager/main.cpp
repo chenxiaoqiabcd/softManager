@@ -1,11 +1,12 @@
 #include <Windows.h>
-#include <Msi.h>
 
 #include "helper.h"
-#include "kf_log.h"
+#include "log_helper.h"
+#include "mail.h"
 #include "mainWindow.h"
 #include "mp.h"
 #include "resource.h"
+#include "track.h"
 
 #pragma comment(lib, "Msi.lib")
 
@@ -17,6 +18,10 @@ bool IsOneInstance(const wchar_t* mutex_name);
 
 bool IsRestart();
 
+void UploadErrorLog();
+
+LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo);
+
 int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 					__in LPWSTR lpCmdLine, __in int nCmdShow) {
 	if (!IsOneInstance(L"{D93797CB-E79B-451C-B7BB-57A5FBE54288}")) {
@@ -24,14 +29,16 @@ int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 			return 0;
 	}
 
+	SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+
+	KfLog::EnableLocalLog();
+
 	wchar_t bak_path[MAX_PATH];
 	ZeroMemory(bak_path, MAX_PATH * sizeof(wchar_t));
 	GetModuleFileName(nullptr, bak_path, MAX_PATH);
 	wcscat_s(bak_path, L".bak");
 
 	DeleteFile(bak_path);
-
-	// curl_global_init(CURL_GLOBAL_ALL);
 
 	MemoryPool::GetInstance()->Init(30);
 
@@ -50,7 +57,9 @@ int WINAPI wWinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance,
 		KF_ERROR("%s", e.what());
 	}
 
-	// curl_global_cleanup();
+	if (KfLog::HasErrorLog()) {
+		UploadErrorLog();
+	}
 
 	return 0;
 }
@@ -102,4 +111,21 @@ bool IsRestart() {
 	}
 
 	return false;
+}
+
+LONG WINAPI MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo) {
+	KF_ERROR("exception...");
+
+	ExceptionFilter(pExceptionInfo);
+
+	UploadErrorLog();
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+void UploadErrorLog() {
+	SimpleSslSmtpEmail ssl_smtp_email("smtp.qq.com", "465");
+	ssl_smtp_email.SendEmail("765284382@qq.com", "qmuxmuntfjozbfec",
+							 { "chenxiaoqiabcd@outlook.com" }, "软件升级发生异常", "软件升级发生异常",
+							 { KfLog::GetLogPath() }, {});
 }

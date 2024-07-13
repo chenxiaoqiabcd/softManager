@@ -3,7 +3,6 @@
 #include <fstream>
 
 #include "helper.h"
-#include "kf_log.h"
 #include "stringHelper.h"
 
 void CacheDataHelper::SetValue(const wchar_t* key, const wchar_t* value) {
