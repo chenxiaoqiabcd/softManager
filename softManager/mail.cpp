@@ -8,6 +8,8 @@
 #include <string.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+
+#include "stringHelper.h"
 #ifdef WIN32
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -567,8 +569,8 @@ int SmtpEmail::SendEmail(const std::string& from, const std::string& passs, cons
 
     info.recvList[to] = "";
 
-    info.subject = subject;
-    info.message = strMessage;
+    info.subject = CStringHelper::a2u(subject);
+    info.message = CStringHelper::a2u(strMessage);
 
     return SMTPComunicate(info);
 }
@@ -596,8 +598,8 @@ int SmtpEmail::SendEmail(const std::string& from, const std::string& passs, cons
             info.recvList[item] = "";
         }
 
-        info.subject = subject;
-        info.message = strMessage;
+        info.subject = CStringHelper::a2u(subject);
+        info.message = CStringHelper::a2u(strMessage);
 
         for (auto& item : ccList)
         {

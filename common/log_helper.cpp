@@ -6,7 +6,6 @@
 
 #include <Shlwapi.h>
 
-#include "file_helper.h"
 #include "file_read_stream.h"
 #include "helper.h"
 #include "kf_str.h"
@@ -17,13 +16,14 @@
 void KfLog::EnableLocalLog() {
 	auto folder = std::filesystem::path(Helper::GetRoamingDir()) / "softManager";
 
-	std::error_code error_code;
-
 	if(!std::filesystem::is_directory(folder)) {
+		std::error_code error_code;
 		std::filesystem::create_directories(folder, error_code);
 	}
 
 	out_file_name_ = (folder / "log.data").string();
+
+	std::filesystem::remove(out_file_name_);
 }
 
 void KfLog::ClearLocalLog() {

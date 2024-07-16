@@ -25,8 +25,6 @@ protected:
 
 	static DWORD WINAPI ThreadUpdateSoftListV2(LPVOID lParam);
 
-	static DWORD WINAPI ThreadUpdateSoftSize(LPVOID lParam);
-
 	void UpdateDate(bool need_update, void* data) override;
 
 	void ClearData() override;
@@ -46,4 +44,8 @@ private:
 
 	// soft name, bit, install location, uninstall path
 	std::vector<std::tuple<CString, uint8_t, CString, CString>> soft_size_list_;
+
+	std::thread update_soft_size_thread_;
+
+	bool closed_ = false;
 };

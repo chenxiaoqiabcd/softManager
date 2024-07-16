@@ -53,7 +53,13 @@ void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 
 LRESULT CInstalledWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if(WM_CLOSE == uMsg) {
+		closed_ = true;
+
 		CurlDownloadManager::Quit();
+
+		if(update_soft_size_thread_.joinable()) {
+			update_soft_size_thread_.join();
+		}
 	}
 
 	return CWndImpl::HandleMessage(uMsg, wParam, lParam);
@@ -82,24 +88,19 @@ DWORD CInstalledWnd::ThreadUpdateSoftListV2(LPVOID lParam) {
 											it.m_strUninstallPth);
 	}
 
-	const HANDLE hThread1 = CreateThread(nullptr, 0, ThreadUpdateSoftSize, pThis, 0, nullptr);
-	CloseHandle(hThread1);
+	std::thread update_soft_size_thread = std::thread([pThis] {
+		while (!pThis->soft_size_list_.empty() && !pThis->closed_) {
+			auto begin = pThis->soft_size_list_.begin();
 
-	return 0;
-}
+			pThis->UpdateSize(std::get<0>(*begin), std::get<1>(*begin),
+							  std::get<2>(*begin),
+							  std::get<3>(*begin));
 
-DWORD CInstalledWnd::ThreadUpdateSoftSize(LPVOID lParam) {
-	CInstalledWnd* pThis = static_cast<CInstalledWnd*>(lParam);
+			pThis->soft_size_list_.erase(begin);
+		}
+	});
 
-	while(!pThis->soft_size_list_.empty()) {
-		auto begin = pThis->soft_size_list_.begin();
-
-		pThis->UpdateSize(std::get<0>(*begin), std::get<1>(*begin), 
-						  std::get<2>(*begin), 
-						  std::get<3>(*begin));
-
-		pThis->soft_size_list_.erase(begin);
-	}
+	pThis->update_soft_size_thread_ = std::move(update_soft_size_thread);
 
 	return 0;
 }

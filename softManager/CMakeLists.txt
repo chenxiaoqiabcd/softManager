@@ -71,7 +71,7 @@ target_link_libraries(softManager
 	${PROJECT_SOURCE_DIR}/third_party/openssl-openssl-3.3.1/lib/VC/x86/MT/libssl_static.lib
 )
 
-add_custom_command(TARGET softManager POST_BUILD
-	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
-	COMMENT "editbin successed!!!"
-)
+# add_custom_command(TARGET softManager POST_BUILD
+# 	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
+# 	COMMENT "editbin successed!!!"
+# )
