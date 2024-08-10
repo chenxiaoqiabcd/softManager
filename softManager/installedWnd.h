@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include <thread>
 
 #include "observerMode.h"
 #include "WndImpl.h"
@@ -11,7 +11,7 @@ struct SoftInfo;
 class CInstalledWnd : public CWndImpl, public IDisplay
 {
 public:
-	~CInstalledWnd();
+	virtual ~CInstalledWnd();
 
 	void UpdateSoftInfo();
 protected:
@@ -30,22 +30,20 @@ protected:
 	void ClearData() override;
 
 	void ClearData(void* data) override;
+
+	static DWORD OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr);
 private:
 	LONGLONG GetInstallPathSize(const wchar_t* install_path, const wchar_t* uninstall_path);
 
-	void UpdateSize(const wchar_t* soft_name, uint8_t bit, const wchar_t* install_path,
-					const wchar_t* uninstall_path);
+	void UpdateSize(const SoftInfo& info);
 
 	CSoftListElementUI* CreateLine(const SoftInfo& soft_info) const;
 
 	DuiLib::CDuiString find_text_;
 
-	// std::map<CString, std::tuple<CString, CString>> soft_size_map_;
-
-	// soft name, bit, install location, uninstall path
-	std::vector<std::tuple<CString, uint8_t, CString, CString>> soft_size_list_;
+	std::vector<SoftInfo> soft_size_list_;
 
 	std::thread update_soft_size_thread_;
 
-	bool closed_ = false;
+	bool stop_update_soft_list_ = false;
 };

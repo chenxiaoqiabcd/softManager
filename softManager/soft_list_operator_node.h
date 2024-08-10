@@ -31,8 +31,6 @@ private:
 
 	static void OnDownloadNotify(void* user_ptr, const char* url, const char* msg);
 
-	static DWORD OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr);
-
 	std::string download_url_;
 	std::wstring key_name_;
 
@@ -66,6 +64,8 @@ public:
 	void SetUpdateInfo(const char* last_version, const char* download_url,
 					   const std::vector<std::map<std::wstring, std::wstring>>& actions, bool cracked);
 
+	void SetUpdateText(const wchar_t* value) const;
+
 	void UpdateMessage(const wchar_t* value);
 
 	void UpdateUpgradeInfo(const char* last_version, const char* download_url);
@@ -86,6 +86,8 @@ private:
 
 	DuiLib::CButtonUI* btn_uninstall_ = nullptr;
 	DuiLib::CButtonUI* btn_update_ = nullptr;
+
+	DuiLib::CTabLayoutUI* tab_layout_;
 
 	Scheme* scheme_ = nullptr;
 

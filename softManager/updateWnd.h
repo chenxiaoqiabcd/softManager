@@ -32,6 +32,10 @@ protected:
 	void UpdateDate();
 
 	void RemoveLine(const wchar_t* soft_name) const;
+
+	static DWORD OnRefreshUpdateWndList(WPARAM wParam, LPARAM lParam, LPVOID data);
+
+	static DWORD OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr);
 private:
 	std::vector<std::tuple<KfString, uint8_t>> update_info_vec_;
 };

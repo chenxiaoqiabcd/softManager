@@ -29,6 +29,7 @@ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 add_definitions(-DUILIB_EXPORTS)
 add_definitions(-DBUILDING_LIBCURL)
 add_definitions(-DHTTP_ONLY)
+add_definitions(-DWIN32_LEAN_AND_MEAN)
 
 IF(DEFINED ENV{GITHUB_RUN_NUMBER})
 	SET(BUILD_VERSION $ENV{GITHUB_RUN_NUMBER})

@@ -5,7 +5,6 @@
 #include "file_helper.h"
 #include "helper.h"
 #include "letter_helper.h"
-#include "scheme.h"
 #include "softInfo.h"
 #include "SoftListElementUI.h"
 #include "stringHelper.h"
@@ -27,6 +26,8 @@ LPCTSTR CInstalledWnd::GetSkinFile() {
 void CInstalledWnd::Init() {
 	UpdateInstance->GetDataCenter()->Attach(this);
 
+	EventQueueInstance->AppendNewThreadListener(EVENT_INSTALL_PACKAGE, OnInstallPackage, this);
+
 	const HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
 	CloseHandle(hThread);
 }
@@ -34,17 +35,20 @@ void CInstalledWnd::Init() {
 void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 	if(msg.sType == DUI_MSGTYPE_CLICK) {
 		wstring strName = msg.pSender->GetName().GetData();
-		
 		if (0 == _wcsicmp(strName.c_str(), L"closebtn")) {
 			Close(0);
 			return;
 		}
 
 		if(0 == _wcsicmp(strName.c_str(), L"search_btn")) {
-			soft_size_list_.clear();
-
 			find_text_ = m_pm.FindControl(L"search_edit")->GetText();
-			
+
+			stop_update_soft_list_ = true;
+
+			if (update_soft_size_thread_.joinable()) {
+				update_soft_size_thread_.join();
+			}
+
 			HANDLE hThread = CreateThread(nullptr, 0, ThreadUpdateSoftListV2, this, 0, nullptr);
 			CloseHandle(hThread);
 		}
@@ -53,7 +57,7 @@ void CInstalledWnd::Notify(DuiLib::TNotifyUI& msg) {
 
 LRESULT CInstalledWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if(WM_CLOSE == uMsg) {
-		closed_ = true;
+		stop_update_soft_list_ = true;
 
 		CurlDownloadManager::Quit();
 
@@ -70,36 +74,37 @@ DWORD CInstalledWnd::ThreadUpdateSoftListV2(LPVOID lParam) {
 
 	DuiLib::CListUI* pList = static_cast<DuiLib::CListUI*>(pThis->m_pm.FindControl(L"soft_list_v2"));
 
-	pList->RemoveAll();
+	for(int index = pList->GetCount() - 1; index >=0; --index) {
+		pList->GetItemAt(index)->SetVisible(false);
+	}
 	
 	for (const auto& it : CSoftInfo::GetInstance()->GetSoftInfo()) {
 		std::wstring soft_name = LetterHelper::GetLetter(it.m_strSoftName.GetString());
-
+	
 		if (!pThis->find_text_.IsEmpty() &&
 			nullptr == StrStrIW(soft_name.c_str(), pThis->find_text_.GetData()) &&
 			nullptr == StrStrIW(it.m_strSoftName,
 								pThis->find_text_)) {
 			continue;
 		}
-
+	
 		pList->Add(pThis->CreateLine(it));
-
-		pThis->soft_size_list_.emplace_back(it.m_strSoftName, it.bit, it.m_strInstallLocation,
-											it.m_strUninstallPth);
+	
+		pThis->soft_size_list_.emplace_back(it);
 	}
-
+	
 	std::thread update_soft_size_thread = std::thread([pThis] {
-		while (!pThis->soft_size_list_.empty() && !pThis->closed_) {
-			auto begin = pThis->soft_size_list_.begin();
+		for(const auto& it : pThis->soft_size_list_) {
+			if(pThis->stop_update_soft_list_) {
+				break;
+			}
 
-			pThis->UpdateSize(std::get<0>(*begin), std::get<1>(*begin),
-							  std::get<2>(*begin),
-							  std::get<3>(*begin));
-
-			pThis->soft_size_list_.erase(begin);
+			pThis->UpdateSize(it);
 		}
-	});
 
+		pThis->soft_size_list_.clear();
+	});
+	
 	pThis->update_soft_size_thread_ = std::move(update_soft_size_thread);
 
 	return 0;
@@ -160,6 +165,28 @@ void CInstalledWnd::ClearData(void* data) {
 	}
 }
 
+DWORD CInstalledWnd::OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr) {
+	auto pThis = static_cast<CInstalledWnd*>(user_ptr);
+
+	auto file_path = reinterpret_cast<const char*>(wParam);
+	auto url = CStringHelper::a2w(reinterpret_cast<const char*>(lParam));
+
+	const auto pList = dynamic_cast<DuiLib::CListUI*>(pThis->m_pm.FindControl(L"soft_list_v2"));
+
+	auto count = pList->GetCount();
+
+	for (int index = 0; index < count; ++index) {
+		auto line = dynamic_cast<CSoftListElementUI*>(pList->GetItemAt(index));
+
+		if (line->GetDownloadUrl() == url) {
+			line->InstallPackage(CStringHelper::a2w(file_path).c_str());
+			break;
+		}
+	}
+
+	return 0;
+}
+
 LONGLONG CInstalledWnd::GetInstallPathSize(const wchar_t* install_path, const wchar_t* uninstall_path) {
 	const auto install_path_temp = FileHelper::GetFilePath(install_path);
 	const auto uninstall_path_temp = FileHelper::GetFilePath(uninstall_path);
@@ -182,8 +209,7 @@ LONGLONG CInstalledWnd::GetInstallPathSize(const wchar_t* install_path, const wc
 	return 0;
 }
 
-void CInstalledWnd::UpdateSize(const wchar_t* soft_name, uint8_t bit, const wchar_t* install_path,
-							   const wchar_t* uninstall_path) {
+void CInstalledWnd::UpdateSize(const SoftInfo& info) {
 	const DuiLib::CListUI* pList = static_cast<DuiLib::CListUI*>(m_pm.FindControl(L"soft_list_v2"));
 
 	const int count = pList->GetCount();
@@ -191,13 +217,13 @@ void CInstalledWnd::UpdateSize(const wchar_t* soft_name, uint8_t bit, const wcha
 	for (int n = 0; n < count; ++n) {
 		const CSoftListElementUI* line = static_cast<CSoftListElementUI*>(pList->GetItemAt(n));
 
-		if(nullptr == line) {
+		if (nullptr == line) {
 			break;
 		}
 
-		if (line->GetBit() == bit
-			&& CStringHelper::IsMatch(line->GetSoftName().GetData(), soft_name)) {
-			const long long size = GetInstallPathSize(install_path, uninstall_path);
+		if (line->GetBit() == info.bit
+			&& CStringHelper::IsMatch(line->GetSoftName().GetData(), info.m_strSoftName.GetString())) {
+			const long long size = GetInstallPathSize(info.m_strInstallLocation.GetString(), info.m_strUninstallPth.GetString());
 			line->UpdateSize(Helper::ToWStringSize(size).c_str());
 			break;
 		}

@@ -1,11 +1,8 @@
 #pragma once
 
-#include <memory>
 #include <string_view>
 
 #include <UIlib.h>
-
-#include <curl/curl.h>
 
 class SoftListOperatorNode;
 class CurlDownloadManager;
@@ -27,6 +24,8 @@ public:
 
 	uint8_t GetBit() const;
 
+	std::wstring GetDownloadUrl() const;
+
 	void SetUninstallPath(const wchar_t* value);
 
 	void SetUpdateInfo(const std::string_view& last_version, const std::string_view& download_url,
@@ -39,10 +38,10 @@ public:
 	void UpdateUpgradeInfo(std::string_view last_version, std::string_view download_url) const;
 
 	void UpdateSize(const wchar_t* value) const;
+
+	void InstallPackage(const wchar_t* file_path);
 protected:
 	void DoInit() override;
-
-	static DWORD WINAPI ThreadUpdateSize(LPVOID lParam);
 
 	// 创建序号节点
 	DuiLib::CLabelUI* CreateNumberNode();
@@ -63,6 +62,10 @@ protected:
 private:
 	SoftListOperatorNode* operator_node_ = nullptr;
 
+	std::vector<std::map<std::wstring, std::wstring>> actions_;
+
+	std::wstring key_name_;
+
 	DuiLib::CDuiString soft_name_;
 
 	DuiLib::CDuiString icon_;
@@ -74,10 +77,6 @@ private:
 	DuiLib::CDuiString message_;
 
 	DuiLib::CDuiString uninst_path_;
-
-	std::vector<std::map<std::wstring, std::wstring>> actions_;
-
-	std::wstring key_name_;
 
 	bool cracked_ = false;
 

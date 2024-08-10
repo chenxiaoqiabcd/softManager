@@ -1,6 +1,8 @@
 #include "SoftListElementUI.h"
 
+#include "event_queue_global_manager.h"
 #include "file_helper.h"
+#include "helper.h"
 #include "scheme.h"
 #include "soft_list_operator_node.h"
 #include "stringHelper.h"
@@ -59,6 +61,10 @@ uint8_t CSoftListElementUI::GetBit() const {
 	return bit_;
 }
 
+std::wstring CSoftListElementUI::GetDownloadUrl() const {
+	return download_url_.GetData();
+}
+
 void CSoftListElementUI::SetUninstallPath(const wchar_t* value) {
 	uninst_path_ = value;
 }
@@ -88,6 +94,29 @@ void CSoftListElementUI::UpdateUpgradeInfo(std::string_view last_version,
 
 void CSoftListElementUI::UpdateSize(const wchar_t* value) const {
 	GetItemAt(4)->SetText(value);
+}
+
+void CSoftListElementUI::InstallPackage(const wchar_t* file_path) {
+	operator_node_->SetUpdateText(L"开始安装");
+
+	if (StrStrIW(file_path, L".exe") || StrStrIW(file_path, L".msi")) {
+		Helper::ExecuteApplication(file_path, L"");
+		operator_node_->SetUpdateText(L"安装完成");
+		EventQueueInstance->PostEvent(EVENT_UPDATE_SOFT_DATA,
+									  reinterpret_cast<WPARAM>(key_name_.c_str()));
+
+		return;
+	}
+
+	for (auto& it : actions_) {
+		if (it[L"name"] == L"clipboard") {
+			Helper::UpdateClipboard(CStringHelper::w2a(it[L"text"]));
+		}
+	}
+
+	Helper::OpenFolderAndSelectFile(file_path);
+
+	operator_node_->SetUpdateText(L"下载完成");
 }
 
 void CSoftListElementUI::DoInit() {

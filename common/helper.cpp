@@ -1,6 +1,7 @@
 #include "helper.h"
 
 #include <intrin.h>
+#include <shellapi.h>
 #include <Shlwapi.h>
 #include <tchar.h>
 #include <WtsApi32.h>

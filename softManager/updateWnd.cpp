@@ -21,27 +21,9 @@ LPCTSTR CUpdateWnd::GetSkinFile() {
 }
 
 void CUpdateWnd::Init() {
-	auto OnRefreshUpdateWndList = [=](WPARAM wParam, LPARAM lParam) {
-		if(!IsWindow(m_hWnd)) {
-			return 0;
-		}
+	EventQueueInstance->AppendNewThreadListener(EVENT_REFRESH_UPDATE_WND_SOFT_LIST, OnRefreshUpdateWndList, this);
 
-		const auto soft_list = static_cast<DuiLib::CListUI*>(m_pm.FindControl(L"soft_list"));
-
-		if(nullptr != soft_list) {
-			ClearData();
-			UpdateDate();
-			return 0;
-		}
-
-		KF_WARN("soft_list没找到，可以考虑再添加一点延迟");
-
-		return 0;
-	};
-
-	
-	EventQueueInstance->AppendNewThreadListener(EVENT_REFRESH_UPDATE_WND_SOFT_LIST,
-												OnRefreshUpdateWndList);
+	EventQueueInstance->AppendNewThreadListener(EVENT_INSTALL_PACKAGE, OnInstallPackage, this);
 
 	UpdateInstance->GetDataCenter()->Attach(this);
 }
@@ -167,4 +149,45 @@ void CUpdateWnd::RemoveLine(const wchar_t* soft_name) const {
 			break;
 		}
 	}
+}
+
+DWORD CUpdateWnd::OnRefreshUpdateWndList(WPARAM wParam, LPARAM lParam, LPVOID data) {
+	auto pThis = static_cast<CUpdateWnd*>(data);
+
+	if (!IsWindow(pThis->m_hWnd)) {
+		return 0;
+	}
+
+	const auto soft_list = static_cast<DuiLib::CListUI*>(pThis->m_pm.FindControl(L"soft_list"));
+
+	if (nullptr != soft_list) {
+		pThis->ClearData();
+		pThis->UpdateDate();
+		return 0;
+	}
+
+	KF_WARN("soft_list没找到，可以考虑再添加一点延迟");
+	return 0;
+}
+
+DWORD CUpdateWnd::OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr) {
+	auto pThis = static_cast<CUpdateWnd*>(user_ptr);
+
+	auto file_path = reinterpret_cast<const char*>(wParam);
+	auto url = CStringHelper::a2w(reinterpret_cast<const char*>(lParam));
+
+	const auto pList = dynamic_cast<DuiLib::CListUI*>(pThis->m_pm.FindControl(L"soft_list"));
+
+	auto count = pList->GetCount();
+
+	for(int index = 0; index < count; ++index) {
+		auto line = dynamic_cast<CUpdateListElementUI*>(pList->GetItemAt(index));
+
+		if(line->GetDownloadUrl() == url) {
+			line->InstallPackage(CStringHelper::a2w(file_path).c_str());
+			break;
+		}
+	}
+
+	return 0;
 }
