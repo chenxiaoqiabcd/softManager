@@ -24,9 +24,10 @@ protected:
 	void Notify(DuiLib::TNotifyUI& msg) override;
 private:
 	static int OnDownloadProgress(void* user_ptr, const char* url,
-								  double total_download, double now_download, double speed);
+								  double rate);
 
-	static void OnDownloadFinished(void* user_ptr, const char* url, const char* file_path,
+	static void OnDownloadFinished(void* user_ptr, const char* url,
+								   const wchar_t* file_path,
 								   CURLcode code, int http_code);
 
 	static void OnDownloadNotify(void* user_ptr, const char* url, const char* msg);

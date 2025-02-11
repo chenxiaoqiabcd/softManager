@@ -56,7 +56,9 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return CWndImpl::HandleMessage(uMsg, wParam, lParam);
 }
 
-void MainWindow::OnFinishedCallback(void* ptr, const char* sign, std::wstring_view file_path) {
+void MainWindow::OnFinishedCallback(void* ptr, const char* sign,
+									std::wstring_view file_path, CURLcode code,
+									int http_code) {
 	const auto pThis = static_cast<MainWindow*>(ptr);
 
 	// if (StrStrIW(file_path.data(), L".exe") || StrStrIW(file_path.data(), L".msi")) {
@@ -127,9 +129,11 @@ int MainWindow::OnProgressSingleThreadCallback(void* ptr, double total_to_downlo
 	return 0;
 }
 
-int MainWindow::OnProgressFunctionV2(void* ptr, double now_downloaded, double total_to_download,
-											 int index, long long now_download_size,
-											 long long total_download_size) {
+int MainWindow::OnProgressFunctionV2(void* ptr, const char* sign,
+									 double now_downloaded,
+									 double total_to_download,
+									 int index, long long now_download_size,
+									 long long total_download_size) {
 	auto pThis = static_cast<MainWindow*>(ptr);
 
 	if (0.1 > now_downloaded) {
@@ -207,7 +211,7 @@ bool MainWindow::DownloadTask(const char* url, const wchar_t* dest_folder) {
 	if (accept_ranges && file_length > 0) {
 		const auto count = std::thread::hardware_concurrency();
 
-		download_request_->SetDownloadProgressCallback(OnProgressFunctionV2, this);
+		download_request_->SetDownloadProgressCallback(OnProgressFunctionV2, this, url);
 		download_request_->DownloadFile(file_length, file_path, count);
 		return true;
 	}

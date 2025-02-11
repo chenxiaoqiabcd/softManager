@@ -21,9 +21,10 @@ void CurlDownloadRequest::SetUrl(const char* url) {
 }
 
 void CurlDownloadRequest::SetDownloadProgressCallback(const ptrDownloadProgressFunction& callback,
-													  void* data) {
+													  void* data, const char* sign) {
 	download_progress_callback_ = callback;
 	download_progress_callback_data_ = data;
+	download_progress_callback_sign_ = sign;
 }
 
 void CurlDownloadRequest::SetDownloadSingleProgressCallback(const ptrDownloadProgressSingleThreadFunction& callback,
@@ -55,7 +56,8 @@ std::string ParseLocationFileName(std::string_view location_url) {
 
 		const auto index = url_body.rfind("/");
 		if (std::string::npos != index) {
-			return url_body.substr(index + 1).data();
+			KfString file_name = url_body.substr(index + 1).c_str();
+			return file_name.Replace("\r\n", "").GetString();
 		}
 
 		return "";
@@ -212,6 +214,7 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 		node->total_download_size = content_length;
 		node->download_progress_callback_ = download_progress_callback_;
 		node->download_progress_callback_data_ = download_progress_callback_data_;
+		node->download_progress_callback_sign_ = download_progress_callback_sign_;
 		node->record_start_pos = node->start_pos = content_length / thread_count * n;
 		node->end_pos = content_length / thread_count * (n + 1) - 1;
 
@@ -283,7 +286,9 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 		}
 
 		download_finished_callback_(download_finished_callback_data_,
-									download_finished_callback_sign_.c_str(), target_file_path);
+									download_finished_callback_sign_.c_str(),
+									target_file_path.data(),
+									download_result_code_, 200);
 	}
 
 	return download_result_code_;
@@ -322,8 +327,8 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 	curl_easy_setopt(single_curl_, CURLOPT_WRITEFUNCTION, WriteSingleThreadDownloadFunction);
 
 	curl_easy_setopt(single_curl_, CURLOPT_NOPROGRESS, 0L);
-	curl_easy_setopt(single_curl_, CURLOPT_PROGRESSDATA, this);
-	curl_easy_setopt(single_curl_, CURLOPT_PROGRESSFUNCTION, SingleProcessProgressFunction);
+	curl_easy_setopt(single_curl_, CURLOPT_XFERINFODATA, this);
+	curl_easy_setopt(single_curl_, CURLOPT_XFERINFOFUNCTION, SingleProcessProgressFunction);
 
 	const auto code = curl_easy_perform(single_curl_);
 
@@ -344,7 +349,7 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 			}
 
 			download_finished_callback_(download_finished_callback_data_,
-										download_finished_callback_sign_.c_str(), target_file_path);
+										download_finished_callback_sign_.c_str(), target_file_path, code, 200);
 		}
 
 		KF_INFO("success download, url: %s", url_.c_str());
@@ -425,18 +430,33 @@ int CurlDownloadRequest::ProgressFunction(void* ptr, double total_to_download, d
 
 		const auto it_find = download_map_.find(node->index);
 		if (it_find != download_map_.end() && pos > it_find->second) {
-			KF_INFO("download index: %2d, progress: %3.2lf%% %10s/%10s %6.2lf%% speed: %10s/s",
-					node->index, total_download_size * 100.0 / node->total_download_size,
+			KF_INFO("download index: %2d progress: %3.2lf%% %10s/%10s %6.2lf%% speed: %10s/s",
+					node->index,
+					total_download_size * 100.0 / node->total_download_size,
 					Helper::ToStringSize(now_downloaded).c_str(),
 					Helper::ToStringSize(total_to_download).c_str(),
 					now_downloaded * 100.0 / total_to_download,
 					Helper::ToStringSize(speed).c_str());
 		}
 
-		download_map_[node->index] = pos;
+		if (download_map_[node->index] <= pos) {
+			download_map_[node->index] = pos;
+		}
+		else {
+			int i = 0;
+			++i;
+
+			static auto t = total_to_download;
+			static auto n = now_downloaded;
+			static auto r = total;
+
+			int s = 0;
+			s++;
+		}
 
 		if (nullptr != node->download_progress_callback_) {
 			result = node->download_progress_callback_(node->download_progress_callback_data_,
+													   node->download_progress_callback_sign_,
 													   total_download_size, node->total_download_size,
 													   node->index, pos, total);
 		}

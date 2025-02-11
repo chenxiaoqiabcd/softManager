@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string_view>
+#include <curl/curl.h>
 
 #include "WndImpl.h"
 
@@ -19,12 +20,13 @@ protected:
 
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
-	static void OnFinishedCallback(void* ptr, const char* sign, std::wstring_view file_path);
+	static void OnFinishedCallback(void* ptr, const char* sign,
+								   std::wstring_view file_path, CURLcode code, int http_code);
 
 	static int OnProgressSingleThreadCallback(void* ptr, double total_to_download,
 											  double now_downloaded, double, double);
 
-	static int OnProgressFunctionV2(void* ptr, double now_downloaded, double total_to_download,
+	static int OnProgressFunctionV2(void* ptr, const char* sign, double now_downloaded, double total_to_download,
 									int index, long long now_download_size,
 									long long total_download_size);
 private:

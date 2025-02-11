@@ -41,7 +41,7 @@ void UpdateButtonUI::NotifyClickedUpdateButton(DuiLib::TNotifyUI& msg) {
 
 	CurlDownloadManager download_manager;
 	download_manager.AddTask(download_url_.c_str(),
-							 OnDownloadProgress, OnDownloadFinished, OnDownloadNotify, this);
+							 { OnDownloadFinished, OnDownloadProgress, OnDownloadNotify, this });
 }
 
 void UpdateButtonUI::Notify(DuiLib::TNotifyUI& msg) {
@@ -51,15 +51,15 @@ void UpdateButtonUI::Notify(DuiLib::TNotifyUI& msg) {
 }
 
 int UpdateButtonUI::OnDownloadProgress(void* user_ptr, const char* url,
-											 double total_download, double now_download, double speed) {
+											 double rate) {
 	auto pThis = static_cast<UpdateButtonUI*>(user_ptr);
 
 	if (pThis->download_url_ != url) {
 		return 0;
 	}
 
-	if (now_download > 0.0) {
-		auto buffer = KfString::Format("%0.2lf%%", now_download / total_download * 100.0f);
+	if (rate > 0.0f) {
+		auto buffer = KfString::Format("%0.2lf%%", rate * 100.0f);
 		pThis->SetText(buffer.GetWString().c_str());
 		return 0;
 	}
@@ -69,25 +69,29 @@ int UpdateButtonUI::OnDownloadProgress(void* user_ptr, const char* url,
 	return 0;
 }
 
-void UpdateButtonUI::OnDownloadFinished(void* user_ptr, const char* url, const char* file_path,
-									  CURLcode code, int http_code) {
+void UpdateButtonUI::OnDownloadFinished(void* user_ptr, const char* url,
+										const wchar_t* file_path,
+										CURLcode code, int http_code) {
 	auto pThis = static_cast<UpdateButtonUI*>(user_ptr);
 	if (pThis->download_url_ != url) {
 		return;
 	}
 
-	if(200 != http_code) {
+	if (200 != http_code) {
 		// TODO: 发送请求给管理员更新下载链接
 	}
 
-	if(CURLE_OK != code || 200 != http_code) {
-		auto buffer = KfString::Format(L"curl code: %d, http code: %d", code, http_code);
+	if (CURLE_OK != code || 200 != http_code) {
+		auto buffer = KfString::Format(L"curl code: %d, http code: %d",
+									   code, http_code);
 		pThis->SetText(L"下载失败");
 		pThis->SetToolTip(buffer.GetWString().c_str());
 		return;
 	}
 
-	EventQueueInstance->PostEvent(EVENT_INSTALL_PACKAGE, reinterpret_cast<WPARAM>(file_path), reinterpret_cast<LPARAM>(url));
+	EventQueueInstance->PostEvent(EVENT_INSTALL_PACKAGE,
+								  reinterpret_cast<WPARAM>(file_path),
+								  reinterpret_cast<LPARAM>(url));
 }
 
 void UpdateButtonUI::OnDownloadNotify(void* user_ptr, const char* url, const char* msg) {

@@ -173,7 +173,7 @@ DWORD CUpdateWnd::OnRefreshUpdateWndList(WPARAM wParam, LPARAM lParam, LPVOID da
 DWORD CUpdateWnd::OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr) {
 	auto pThis = static_cast<CUpdateWnd*>(user_ptr);
 
-	auto file_path = reinterpret_cast<const char*>(wParam);
+	auto file_path = reinterpret_cast<const wchar_t*>(wParam);
 	auto url = CStringHelper::a2w(reinterpret_cast<const char*>(lParam));
 
 	const auto pList = dynamic_cast<DuiLib::CListUI*>(pThis->m_pm.FindControl(L"soft_list"));
@@ -184,7 +184,7 @@ DWORD CUpdateWnd::OnInstallPackage(WPARAM wParam, LPARAM lParam, LPVOID user_ptr
 		auto line = dynamic_cast<CUpdateListElementUI*>(pList->GetItemAt(index));
 
 		if(line->GetDownloadUrl() == url) {
-			line->InstallPackage(CStringHelper::a2w(file_path).c_str());
+			line->InstallPackage(file_path);
 			break;
 		}
 	}
