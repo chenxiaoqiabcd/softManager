@@ -1,6 +1,8 @@
 #include "UpdateDetection.h"
 
 #include "helper.h"
+#include "kf_str.h"
+#include "log_helper.h"
 #include "softInfo.h"
 #include "stringHelper.h"
 
@@ -14,6 +16,10 @@ CGlobalUpdateManager* CGlobalUpdateManager::GetInstance() {
 
 void CGlobalUpdateManager::Run(const std::vector<SoftInfo>& soft_infos) {
 	Helper::UpdateStatusLabel(L"正在检查软件更新");
+
+	update_info_data_.clear();
+	center_->ClearData();
+	handle_count_ = 0;
 
 	jsoncons::json request = jsoncons::json::make_array();
 
@@ -32,7 +38,68 @@ void CGlobalUpdateManager::Run(const std::vector<SoftInfo>& soft_infos) {
 	request.dump(request_body);
 
 	if (RequestHelper::CheckUpdate(request_body.c_str(), &response_body)) {
-		HandlerRemoteResponse(response_body.c_str());
+		HandlerRemoteResponse(response_body.c_str(), soft_infos.size());
+	}
+
+	Helper::UpdateStatusLabel(L"");
+}
+
+void CGlobalUpdateManager::Run(const std::vector<SoftInfo>& soft_infos,
+							   size_t start, size_t end) {
+	jsoncons::json request = jsoncons::json::make_array();
+
+	for (auto index = start; index < end; ++index) {
+		auto name = soft_infos[index].m_strSoftName;
+		auto version = soft_infos[index].m_strSoftVersion;
+
+		jsoncons::json item;
+
+		item["name"] = CStringHelper::w2u(name.GetString());
+		item["version"] = CStringHelper::w2u(version.GetString());
+		item["mid"] = Helper::GetCpuId();
+		item["bit"] = soft_infos[index].bit;
+
+		request.emplace_back(item);
+	}
+
+	threads_.emplace_back([=] {
+		std::string request_body, response_body;
+		request.dump(request_body);
+
+		if (RequestHelper::CheckUpdate(request_body.c_str(), &response_body)) {
+			HandlerRemoteResponse(response_body.c_str(), soft_infos.size());
+		}
+	});
+}
+
+void CGlobalUpdateManager::Run(const std::vector<SoftInfo>& soft_infos,
+							   int count) {
+	Helper::UpdateStatusLabel(L"正在检查软件更新");
+
+	update_info_data_.clear();
+	center_->ClearData();
+	handle_count_ = 0;
+
+	auto size = soft_infos.size();
+
+	size_t index = 0, end = 0;
+
+	do {
+		end = index + count;
+
+		if (size < index + count) {
+			end = size;
+		}
+
+		Run(soft_infos, index, end);
+
+		index = end;
+	}while (end < size);
+
+	for (auto& it : threads_) {
+		if (it.joinable()) {
+			it.join();
+		}
 	}
 
 	Helper::UpdateStatusLabel(L"");
@@ -40,6 +107,8 @@ void CGlobalUpdateManager::Run(const std::vector<SoftInfo>& soft_infos) {
 
 void CGlobalUpdateManager::Run(const SoftInfo& info) {
 	Helper::UpdateStatusLabel(L"正在检查软件更新");
+
+	handle_count_ = 0;
 
 	jsoncons::json request = jsoncons::json::make_array();
 
@@ -56,8 +125,8 @@ void CGlobalUpdateManager::Run(const SoftInfo& info) {
 	request.dump(request_body);
 
 	if (RequestHelper::CheckUpdate(request_body.c_str(), &response_body)) {
-		HandlerRemoteResponse(response_body.c_str(),
-							  CStringHelper::w2a(info.m_strSoftName.GetString()).c_str());
+		auto soft_name = CStringHelper::w2a(info.m_strSoftName.GetString());
+		HandlerRemoteResponse(response_body.c_str(), soft_name.c_str());
 	}
 
 	Helper::UpdateStatusLabel(L"");
@@ -90,24 +159,37 @@ DataCenter* CGlobalUpdateManager::GetDataCenter() {
 }
 
 void CGlobalUpdateManager::PushUpgradeInfo(UpdateInfo& update_info) const {
+	auto FindUpdateInfo = [update_info](const UpdateInfo& info) {
+		return info.name == update_info.name;
+	};
+
 	if (std::any_of(update_info_data_.begin(), update_info_data_.end(),
-					[update_info](const UpdateInfo& info) {return info.name == update_info.name; })) {
+					FindUpdateInfo)) {
 		return;
 	}
 
-	center_->UpdateDate(update_info.need_update, &update_info);
-
 	update_info_data_.push_back(update_info);
+
+	center_->UpdateDate(update_info.need_update, &update_info,
+						update_info_data_.size());
 }
 
-void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body) {
-	auto w_body = CStringHelper::u2w(response_body);
+void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body,
+												 size_t soft_count) {
+	std::lock_guard<std::mutex> lock(mutex_);
 
-	update_info_data_.clear();
-	center_->ClearData();
+	auto w_body = CStringHelper::u2w(response_body);
 
 	jsoncons::json response = jsoncons::json::parse(response_body);
 	const auto size = response.size();
+
+	handle_count_ += size;
+
+	auto buffer = KfString::Format(L"正在检查软件更新[%d/%d]",
+								   handle_count_, soft_count);
+
+	Helper::UpdateStatusLabel(buffer.GetWString().c_str());
+
 	for (size_t n = 0; n < size; ++n) {
 		std::string remote_version;
 		std::string package_url;
@@ -124,7 +206,7 @@ void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body) {
 			need_update = response[n]["need_update"].as_bool();
 		}
 
-		if(!need_update && message.empty()) {
+		if(!need_update/* && message.empty()*/) {
 			continue;
 		}
 
@@ -138,6 +220,8 @@ void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body) {
 			type = CStringHelper::u2w(response[n]["type"].as_string());
 
 	 	const auto& actions = ParseActions(response[n]);
+
+		KF_INFO("need update name: %s", CStringHelper::u2a(response[n]["name"].as_string()).c_str());
 
 		UpdateInfo info {
 			need_update,
@@ -153,7 +237,8 @@ void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body) {
 	}
 }
 
-void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body, const char* soft_name) {
+void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body,
+												 const char* soft_name) {
 	auto w_body = CStringHelper::u2w(response_body);
 
 	// update_info_data_.clear();
@@ -170,6 +255,9 @@ void CGlobalUpdateManager::HandlerRemoteResponse(const char* response_body, cons
 
 	jsoncons::json response = jsoncons::json::parse(response_body);
 	const auto size = response.size();
+
+	Helper::UpdateStatusLabel(L"正在检查软件更新");
+
 	for (size_t n = 0; n < size; ++n) {
 		std::string remote_version;
 		std::string package_url;

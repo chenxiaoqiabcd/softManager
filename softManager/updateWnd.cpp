@@ -66,8 +66,7 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 
 		line->SetScheme(scheme_.get());
 		line->SetSoftName(soft_it.m_strSoftName);
-		line->SetIcon(soft_it.m_strSoftIcon,
-					  soft_it.key_name,
+		line->SetIcon(soft_it.m_strSoftIcon, soft_it.key_name,
 					  soft_it.m_strInstallLocation);
 		line->SetBit(soft_it.bit);
 		line->SetLocalVersion(soft_it.m_strSoftVersion);
@@ -79,10 +78,14 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 		return line;
 	}
 
+	KF_WARN("old remote version name: %s, local version: %s, remote version: %s",
+			CStringHelper::w2a(soft_it.m_strSoftName.GetString()).c_str(),
+			local_version.ToString().c_str(), info->version.c_str());
 	return nullptr;
 }
 
-void CUpdateWnd::UpdateDate(bool need_update, void* data) {
+void CUpdateWnd::UpdateDate(bool need_update, void* data,
+							size_t update_count) {
 	const auto info = static_cast<UpdateInfo*>(data);
 
 	if(!need_update) {

@@ -29,7 +29,8 @@ protected:
 
 	static DWORD WINAPI ThreadGetUpdateInfo(LPVOID lParam);
 
-	void UpdateDate(bool need_update, void* data) override;
+	void UpdateDate(bool need_update, void* data,
+					size_t update_count) override;
 
 	void UpdateUpdateCount(int value) const;
 

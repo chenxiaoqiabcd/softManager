@@ -5,7 +5,6 @@
 #include "add_download_task_window.h"
 #include "curl_download_request.h"
 #include "scheme.h"
-#include "stringHelper.h"
 
 LPCTSTR MainWindow::GetSkinFile() {
 	return L"main.xml";
@@ -42,7 +41,14 @@ void MainWindow::Notify(DuiLib::TNotifyUI& msg) {
 			auto pFrame = std::make_shared<AddDownloadTaskWindow>();
 			pFrame->Create(nullptr, L"", UI_WNDSTYLE_DIALOG, WS_EX_WINDOWEDGE);
 			pFrame->CenterWindow();
-			pFrame->ShowModal();
+			if (IDOK == pFrame->ShowModal()) {
+				auto url = pFrame->GetUrl();
+				auto accept_ranges = pFrame->GetAcceptRanges();
+				auto size = pFrame->GetSize();
+				auto save_path = pFrame->GetSavePath();
+
+
+			}
 		}
 	}
 }
@@ -198,13 +204,13 @@ bool MainWindow::DownloadTask(const char* url, const wchar_t* dest_folder) {
 	download_request_->SetUrl(url);
 
 	bool accept_ranges = false;
-	std::string file_name;
+	std::wstring file_name;
 	const auto file_length = download_request_->GetContentLength(&accept_ranges, &file_name);
 
 	wchar_t file_path[MAX_PATH];
 	ZeroMemory(file_path, sizeof(wchar_t) * MAX_PATH);
 	wcscpy(file_path, dest_folder);
-	PathAppend(file_path, CStringHelper::a2w(file_name).c_str());
+	PathAppend(file_path, file_name.c_str());
 
 	download_request_->SetDownloadFinishedCallback(OnFinishedCallback, this, url);
 

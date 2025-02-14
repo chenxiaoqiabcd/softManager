@@ -34,7 +34,7 @@ protected:
 
 	static Gdiplus::Bitmap* GenerateBitmap(const HICON& icon);
 
-	static bool SaveIconToFile(HICON icon, const wchar_t* szFilePath);
+	static std::wstring SaveIconToFile(HICON icon, const wchar_t* szFilePath);
 
 	static HICON LoadIconFile(const wchar_t* icon_path);
 };

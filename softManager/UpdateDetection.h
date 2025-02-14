@@ -2,8 +2,10 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <jsoncons/json.hpp>
@@ -46,6 +48,11 @@ public:
 
 	void Run(const std::vector<SoftInfo>& soft_infos);
 
+	void Run(const std::vector<SoftInfo>& soft_infos,
+			 size_t start, size_t end);
+
+	void Run(const std::vector<SoftInfo>& soft_infos, int count);
+
 	void Run(const SoftInfo& info);
 
 	std::optional<UpdateInfo> MatchName(std::string_view name);
@@ -56,9 +63,10 @@ public:
 private:
 	void PushUpgradeInfo(UpdateInfo& update_info) const;
 
-	void HandlerRemoteResponse(const char* response_body);
+	void HandlerRemoteResponse(const char* response_body, size_t soft_count);
 
-	void HandlerRemoteResponse(const char* response_body, const char* soft_name);
+	void HandlerRemoteResponse(const char* response_body,
+							   const char* soft_name);
 
 	std::vector<std::map<std::wstring, std::wstring>> ParseActions(const jsoncons::json& root);
 
@@ -67,6 +75,12 @@ private:
 	std::vector<RemoteConfigInfo> remote_config_info_vec_;
 
 	std::shared_ptr<DataCenter> center_;
+
+	std::vector<std::thread> threads_;
+
+	int handle_count_ = 0;
+
+	std::mutex mutex_;
 };
 
 extern CGlobalUpdateManager* UpdateInstance;

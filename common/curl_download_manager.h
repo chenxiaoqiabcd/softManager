@@ -21,6 +21,10 @@ struct TaskInfo
 {
 	CallbackInfo callback_info;
 	std::string url;
+
+	bool accept_ranges = false;
+	double size = 0.0f;
+	std::wstring file_path;
 };
 
 struct DownloadInfo
@@ -34,6 +38,10 @@ public:
 	static void SetDownloadCount(uint8_t value);
 
 	static void AddTask(const char* url, const CallbackInfo& callback_info);
+
+	static void AddTask(const char* url, bool accept_ranges, double size,
+						const wchar_t* file_path,
+						const CallbackInfo& callback_info);
 
 	static void PauseTask(const char* url);
 
@@ -61,6 +69,12 @@ protected:
 
 	static void OnNotifyCallback(void* user_ptr, const char* url, const char* msg);
 private:
+	static void DownloadTask(const char* url, const CallbackInfo& callback_info);
+
+	static void DownloadTask(const char* url, bool accept_ranges,
+							 double length, const wchar_t* file_path,
+							 const CallbackInfo& callback_info);
+
 	static void PushTask();
 
 	inline static std::deque<TaskInfo> task_infos;

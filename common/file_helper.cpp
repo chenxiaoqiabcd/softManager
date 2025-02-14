@@ -23,10 +23,7 @@ std::wstring FileHelper::GetIconWithExePath(const wchar_t* szFile) {
 
 	const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
-	if (!SaveIconToFile(hIcon, temp_path.c_str())) {
-		return L"";
-	}
-	return temp_path;
+	return SaveIconToFile(hIcon, temp_path.c_str());
 }
 
 std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
@@ -40,11 +37,11 @@ std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
 
 	auto bitmap_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
-	if (!SaveIconToFile(icon, bitmap_path.c_str())) {
-		return L"";
+	if (PathFileExists(bitmap_path.c_str())) {
+		return bitmap_path;
 	}
 
-	return bitmap_path;
+	return SaveIconToFile(icon, bitmap_path.c_str());
 }
 
 std::wstring FileHelper::GetIconWithDllPath(const wchar_t* path, int index) {
@@ -62,9 +59,7 @@ std::wstring FileHelper::GetIconWithDllPath(const wchar_t* path, int index) {
 
 		const auto temp_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
-		if (SaveIconToFile(hIcon, temp_path.c_str())) {
-			return temp_path;
-		}
+		return SaveIconToFile(hIcon, temp_path.c_str());
 	}
 
 	return L"";
@@ -275,14 +270,14 @@ Gdiplus::Bitmap* FileHelper::GenerateBitmap(const HICON& icon) {
 	return ptr_bitmap;
 }
 
-bool FileHelper::SaveIconToFile(HICON icon, const wchar_t* szFilePath) {
+std::wstring FileHelper::SaveIconToFile(HICON icon, const wchar_t* szFilePath) {
 	if (icon == nullptr) {
-		return false;
+		return L"";
 	}
 
 	auto bmp = GenerateBitmap(icon);
 	if (nullptr == bmp) {
-		return false;
+		return L"";
 	}
 
 	CLSID encoderCLSID;
@@ -292,7 +287,7 @@ bool FileHelper::SaveIconToFile(HICON icon, const wchar_t* szFilePath) {
 	delete bmp;
 	bmp = nullptr;
 
-	return st == Gdiplus::Ok;
+	return st == Gdiplus::Ok ? szFilePath : L"";
 }
 
 HICON FileHelper::LoadIconFile(const wchar_t* icon_path)

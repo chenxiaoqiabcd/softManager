@@ -157,7 +157,7 @@ DWORD CMainWindow::ThreadGetUpdateInfo(LPVOID lParam) {
 	return 0;
 }
 
-void CMainWindow::UpdateDate(bool need_update, void* data) {
+void CMainWindow::UpdateDate(bool need_update, void* data, size_t update_count) {
 	if (!need_update) {
 		return;
 	}
@@ -178,29 +178,22 @@ void CMainWindow::UpdateDate(bool need_update, void* data) {
 			break;
 		}
 
-		UpdateUpdateCount(1);
+		UpdateUpdateCount(update_count);
 
 		break;
 	}
 }
 
 void CMainWindow::UpdateUpdateCount(int value) const {
-	if (const auto pLabel = dynamic_cast<DuiLib::CButtonUI*>(m_pm.FindControl(L"soft_updater_btn"))) {
-		const DuiLib::CDuiString text = pLabel->GetText();
+	const auto pLabel = m_pm.FindControl(L"soft_updater_btn");
 
-		DuiLib::CDuiString new_text;
-		new_text.Format(L"%d", _ttoi(text) + value);
-		pLabel->SetText(new_text);
-
-		pLabel->SetToolTip(L"可升级软件数");
-	}
+	pLabel->SetText(std::to_wstring(value).c_str());
+	pLabel->SetToolTip(L"可升级软件数");
 }
 
 void CMainWindow::ClearData() {
-	DuiLib::CButtonUI* pLabel = static_cast<DuiLib::CButtonUI*>(m_pm.FindControl(L"soft_updater_btn"));
-	if (pLabel) {
-		pLabel->SetText(L"");
-	}
+	auto pLabel = m_pm.FindControl(L"soft_updater_btn");
+	pLabel->SetText(L"");
 }
 
 void CMainWindow::ClearData(void* data) {
@@ -284,7 +277,7 @@ DWORD CMainWindow::OnEventUpdateSoftData(WPARAM wParam, LPARAM lParam, LPVOID da
 		return 0;
 	}
 
-	UpdateInstance->Run(soft_info);
+	UpdateInstance->Run(soft_info, 10);
 
 	return 0;
 }

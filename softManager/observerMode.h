@@ -7,7 +7,8 @@
 */
 class IDisplay {
 public:
-	virtual void UpdateDate(bool need_update, void* data) = 0;
+	virtual void UpdateDate(bool need_update, void* data,
+							size_t update_count) = 0;
 	virtual void ClearData() = 0;
 	virtual void ClearData(void* data) = 0;
 };
@@ -25,9 +26,9 @@ public:
 		}
 	}
 
-	void UpdateDate(bool need_update, void* data) const {
+	void UpdateDate(bool need_update, void* data, size_t update_count) const {
 		for (const auto& it : data_list_) {
-			it->UpdateDate(need_update, data);
+			it->UpdateDate(need_update, data, update_count);
 		}
 	}
 

@@ -752,7 +752,7 @@ KfString KfString::SubStr(int start_pos, size_t length) const {
 
 		strcpy(data.get(), value_ + start_pos);
 
-		return KfString(data.get());
+		return data.get();
 	}
 
 	std::unique_ptr<char> data(new char[length + 1]);

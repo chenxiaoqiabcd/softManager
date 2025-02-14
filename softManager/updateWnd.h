@@ -23,7 +23,7 @@ protected:
 
 	CUpdateListElementUI* CreateLine(const SoftInfo& soft_it, const UpdateInfo* info);
 
-	void UpdateDate(bool need_update, void* data) override;
+	void UpdateDate(bool need_update, void* data, size_t update_count) override;
 
 	void ClearData() override;
 

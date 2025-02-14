@@ -111,7 +111,7 @@ DWORD CInstalledWnd::ThreadUpdateSoftListV2(LPVOID lParam) {
 	return 0;
 }
 
-void CInstalledWnd::UpdateDate(bool need_update, void* data) {
+void CInstalledWnd::UpdateDate(bool need_update, void* data, size_t update_count) {
 	auto info = (UpdateInfo*)data;
 
 	DuiLib::CDuiString name = CStringHelper::a2w(info->name).c_str();

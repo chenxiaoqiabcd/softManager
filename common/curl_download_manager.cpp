@@ -8,7 +8,6 @@
 
 #include "curl_download_request.h"
 #include "log_helper.h"
-#include "stringHelper.h"
 
 void CurlDownloadManager::SetDownloadCount(uint8_t value) {
 	thread_count_ = value;
@@ -20,6 +19,22 @@ void CurlDownloadManager::AddTask(const char* url, const CallbackInfo& callback_
 	info.url = url;
 	task_infos.emplace_back(info);
 	callback_info.notify_callback(callback_info.user_ptr, url, "排队中...");
+	PushTask();
+}
+
+void CurlDownloadManager::AddTask(const char* url, bool accept_ranges,
+								  double size, const wchar_t* file_path,
+								  const CallbackInfo& callback_info) {
+	TaskInfo info;
+
+	info.url = url;
+	info.accept_ranges = accept_ranges;
+	info.size = size;
+	info.file_path = file_path;
+	info.callback_info = callback_info;
+
+	callback_info.notify_callback(callback_info.user_ptr, url, "排队中...");
+
 	PushTask();
 }
 
@@ -129,6 +144,55 @@ void CurlDownloadManager::OnNotifyCallback(void* user_ptr, const char* url, cons
 	}
 }
 
+void CurlDownloadManager::DownloadTask(const char* url,
+									   const CallbackInfo& callback_info) {
+	auto download_request = std::make_shared<CurlDownloadRequest>();
+
+	download_request->SetUrl(url);
+
+	bool accept_ranges = false;
+	std::wstring file_name;
+	auto length = download_request->GetContentLength(&accept_ranges,
+													 &file_name);
+
+	wchar_t temp_path[MAX_PATH];
+	ZeroMemory(temp_path, sizeof(temp_path));
+	GetTempPath(MAX_PATH, temp_path);
+	PathAppend(temp_path, file_name.c_str());
+
+	DownloadTask(url, accept_ranges, length, temp_path, callback_info);
+}
+
+void CurlDownloadManager::DownloadTask(const char* url, bool accept_ranges,
+									   double length, const wchar_t* file_path,
+									   const CallbackInfo& callback_info) {
+	auto download_request = std::make_shared<CurlDownloadRequest>();
+
+	download_request->SetUrl(url);
+
+	download_request->SetDownloadFinishedCallback(OnDownloadFinished,
+												  callback_info.user_ptr,
+												  url);
+
+	if (accept_ranges && length > 0) {
+		// 多线程下载
+		download_request->SetDownloadProgressCallback(OnProgressFunction,
+													  callback_info.user_ptr,
+													  url);
+
+		auto concurrency = std::thread::hardware_concurrency();
+		download_request->DownloadFile(length, file_path, concurrency);
+		return;
+	}
+
+	download_request->SetDownloadSingleProgressCallback(OnDownloadProgressSingleThread,
+														callback_info.user_ptr,
+														url);
+
+	// 单线程下载
+	download_request->DownloadSingleThreadFile(file_path);
+}
+
 void CurlDownloadManager::PushTask() {
 	if (download_infos.size() >= thread_count_) {
 		KF_INFO("已经添加到下载队列，等待中...");
@@ -149,48 +213,21 @@ void CurlDownloadManager::PushTask() {
 		nullptr
 	};
 
-	front.callback_info.notify_callback(front.callback_info.user_ptr, front.url.c_str(), "开始下载");
+	front.callback_info.notify_callback(front.callback_info.user_ptr,
+										front.url.c_str(), "开始下载");
 
 	task_infos.pop_front();
 
 	KF_INFO("开始下载 %s 任务总数: %d", url.c_str(), download_infos.size());
 
-	std::thread download_thread([url, front] {
-		auto download_request = std::make_shared<CurlDownloadRequest>();
-
-		download_request->SetUrl(url.c_str());
-
-		bool accept_ranges = false;
-		std::string file_name;
-		auto length = download_request->GetContentLength(&accept_ranges,
-														 &file_name);
-
-		wchar_t temp_path[MAX_PATH];
-		ZeroMemory(temp_path, sizeof(temp_path));
-		GetTempPath(MAX_PATH, temp_path);
-		PathAppend(temp_path, CStringHelper::a2w(file_name).c_str());
-
-		download_request->SetDownloadFinishedCallback(OnDownloadFinished,
-													  front.callback_info.user_ptr,
-													  url.c_str());
-
-		if (accept_ranges && length > 0) {
-			// 多线程下载
-			download_request->SetDownloadProgressCallback(OnProgressFunction,
-														  front.callback_info.user_ptr,
-														  url.c_str());
-
-			auto concurrency = std::thread::hardware_concurrency();
-			download_request->DownloadFile(length, temp_path, concurrency);
+	std::thread download_thread([front] {
+		if (!front.file_path.empty()) {
+			DownloadTask(front.url.c_str(), front.accept_ranges, front.size,
+						 front.file_path.c_str(), front.callback_info);
 			return;
 		}
 
-		download_request->SetDownloadSingleProgressCallback(OnDownloadProgressSingleThread,
-															front.callback_info.user_ptr,
-															url.c_str());
-
-		// 单线程下载
-		download_request->DownloadSingleThreadFile(temp_path);
+		DownloadTask(front.url.c_str(), front.callback_info);
 	});
 
 	download_threads_.emplace_back(std::move(download_thread));

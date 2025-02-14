@@ -37,7 +37,8 @@ public:
 	void SetDownloadFinishedCallback(const ptrDownloadFinishedCallback& callback, void* data,
 									 const char* sign);
 
-	double GetContentLength(bool* accept_ranges, std::string* ptr_file_name, long no_body = 1) const;
+	double GetContentLength(bool* accept_ranges, std::wstring* ptr_file_name,
+							int retry_count = 3) const;
 
 	// 多线程下载
 	long DownloadFile(double content_length, std::wstring_view target_file_path, unsigned thread_count);

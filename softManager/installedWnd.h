@@ -25,7 +25,8 @@ protected:
 
 	static DWORD WINAPI ThreadUpdateSoftListV2(LPVOID lParam);
 
-	void UpdateDate(bool need_update, void* data) override;
+	void UpdateDate(bool need_update, void* data,
+					size_t update_count) override;
 
 	void ClearData() override;
 

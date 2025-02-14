@@ -44,10 +44,10 @@ void CurlDownloadRequest::SetDownloadFinishedCallback(const ptrDownloadFinishedC
 struct HeaderData
 {
 	bool accept_ranges = false;
-	std::string file_name;
+	std::wstring file_name;
 };
 
-std::string ParseLocationFileName(std::string_view location_url) {
+std::wstring ParseLocationFileName(std::string_view location_url) {
 	auto location = CStringHelper::DeescapeURL(location_url.data());
 
 	const auto url_arg_index = location.find("?");
@@ -57,10 +57,10 @@ std::string ParseLocationFileName(std::string_view location_url) {
 		const auto index = url_body.rfind("/");
 		if (std::string::npos != index) {
 			KfString file_name = url_body.substr(index + 1).c_str();
-			return file_name.Replace("\r\n", "").GetString();
+			return file_name.Replace("\r\n", "").GetWString();
 		}
 
-		return "";
+		return L"";
 	}
 
 	const KfString url_arg = location.substr(static_cast<int>(url_arg_index) + 1).data();
@@ -71,11 +71,11 @@ std::string ParseLocationFileName(std::string_view location_url) {
 		constexpr auto filter = "filename=";
 		const auto filter_index = it.Find(filter);
 		if (filter_index != std::string::npos) {
-			return it.SubStr(static_cast<int>(filter_index + strlen(filter))).GetString();
+			return it.SubStr(static_cast<int>(filter_index + strlen(filter))).GetWString();
 		}
 	}
 
-	return "";
+	return L"";
 }
 
 auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t {
@@ -99,6 +99,12 @@ auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t 
 	const auto value_index = temp.Find("=");
 	if (index != std::string::npos && value_index != std::string::npos) {
 		KfString file_name = temp.SubStr(static_cast<int>(value_index) + 1);
+
+		auto index = file_name.Find(';');
+		if (index != std::string::npos) {
+			file_name = file_name.SubStr(0, index);
+		}
+
 		file_name = CStringHelper::DeescapeURL(file_name.GetString()).c_str();
 		header_data->file_name = file_name.Replace("*", "").Replace("\r\n", "").Replace("\"", "");
 
@@ -115,8 +121,9 @@ auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t 
 	return size * nmemb;
 }
 
-double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* ptr_file_name,
-											 long no_body /*= 1*/) const {
+double CurlDownloadRequest::GetContentLength(bool* accept_ranges,
+											 std::wstring* ptr_file_name,
+											 int retry_count/* = 3*/) const {
 	auto ReleaseCurl = [](CURL* c) {
 		curl_easy_cleanup(c);
 	};
@@ -135,7 +142,7 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 	index = file_name.ReverseFind("/");
 	if (std::string::npos != index) {
 		file_name = file_name.SubStr(static_cast<int>(index) + 1);
-		*ptr_file_name = CStringHelper::DeescapeURL(file_name.GetString());
+		*ptr_file_name = CStringHelper::DeescapeURL(file_name.GetWString());
 	}
 
 	// 如果在5秒内低于1字节/秒，则终止
@@ -161,13 +168,9 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 	const CURLcode code = curl_easy_perform(curl_guard.get());
 
 	// CURLE_WRITE_ERROR 是正常的，因为我们只需要获取头部信息
-	if (code == CURLE_OK || code == CURLE_WRITE_ERROR || code == CURLE_RECV_ERROR) {
+	if (code == CURLE_OK || code == CURLE_WRITE_ERROR) {
 		DWORD http_code = 0;
 		curl_easy_getinfo(curl_guard.get(), CURLINFO_HTTP_CODE, &http_code);
-
-		if(404 == http_code) {
-			return GetContentLength(accept_ranges, ptr_file_name, false);
-		}
 
 		*accept_ranges = header_data->accept_ranges;
 
@@ -176,9 +179,16 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 		}
 
 		double file_length = 0.0;
-		curl_easy_getinfo(curl_guard.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD, &file_length);
-		KF_INFO("success get file length: %s", Helper::ToStringSize(file_length).c_str());
+		curl_easy_getinfo(curl_guard.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+						  &file_length);
+		KF_INFO("success get file length: %s",
+				Helper::ToStringSize(file_length).c_str());
 		return file_length;
+	}
+
+	if (retry_count > 0) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		return GetContentLength(accept_ranges, ptr_file_name, retry_count - 1);
 	}
 
 	KF_WARN("failed get file length: error code: %d", code);
