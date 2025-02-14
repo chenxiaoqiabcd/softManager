@@ -65,8 +65,7 @@ void CurlDownloadManager::Quit() {
 	stop_download_ = true;
 
 	for (auto& it : download_infos) {
-		// it.second.download->Stop();
-		throw std::runtime_error("not implement");
+		it.second.download->StopDownload();
 	}
 
 	for (auto& it : download_threads_) {

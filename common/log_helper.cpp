@@ -9,14 +9,14 @@
 #include "file_read_stream.h"
 #include "helper.h"
 #include "kf_str.h"
-#include "stringHelper.h"
+#include "StringHelper.h"
 
 #define MAX_LEN MAX_PATH
 
 void KfLog::EnableLocalLog() {
 	auto folder = std::filesystem::path(Helper::GetRoamingDir()) / "softManager";
 
-	if(!std::filesystem::is_directory(folder)) {
+	if (!std::filesystem::is_directory(folder)) {
 		std::error_code error_code;
 		std::filesystem::create_directories(folder, error_code);
 	}
@@ -30,84 +30,50 @@ void KfLog::ClearLocalLog() {
 	DeleteFileA(out_file_name_.c_str());
 }
 
-void KfLog::Output(const char* type, const char* file, const char* function, int line) {
-	auto current_time = std::chrono::system_clock::now();
-	std::time_t t = std::chrono::system_clock::to_time_t(current_time);
-	std::tm* now = std::localtime(&t);
+void KfLog::Output(const char* type, const char* file, const char* function, int line, const char* format, ...) {
+	KfString log_header = ContactLogHeader(type, file, function, line).c_str();
 
-	char error_info[MAX_PATH];
-	ZeroMemory(error_info, sizeof(error_info));
-
-	if (StrStrIA(type, "error")) {
-		sprintf(error_info, "error code: %d", GetLastError());
-	}
-
-	char data[1024];
-	ZeroMemory(data, 1024);
-	sprintf_s(data, "[%s %02d:%02d:%02d]%s:%d %s %s ", type, now->tm_hour, now->tm_min, now->tm_sec,
-			  PathFindFileNameA(file), line, function, error_info);
-
-	if (!out_file_name_.empty()) {
-		AppendData(out_file_name_.c_str(), data);
-	}
-
-	std::cout << data;
-}
-
-void KfLog::Output(char const* const format, ...) {
 	va_list list;
 	va_start(list, format);
 
-	std::string result = KfString::FormatList(format, list);
+	auto log_content = KfString::FormatList(format, list);
 
 	va_end(list);
 
-	result.append("\n");
+	auto result = log_header + L" " + log_content.c_str() + L"\n";
 
-	if (!out_file_name_.empty()) {
-		AppendData(out_file_name_.c_str(), result.c_str());
-	}
-
-	std::cout << result;
+	AppendData(out_file_name_.c_str(), result);
 }
 
-void KfLog::Output(const wchar_t* format, ...) {
+void KfLog::Output(const char* type, const char* file, const char* function, int line, const wchar_t* format, ...) {
+	KfString log_header = ContactLogHeader(type, file, function, line).c_str();
+
 	va_list list;
 	va_start(list, format);
 
-	const std::wstring result = KfString::FormatList(format, list);
+	auto log_content = KfString::FormatList(format, list);
 
 	va_end(list);
 
-	const auto data = CStringHelper::w2a(result) + "\n";
+	auto result = log_header + L" " + log_content.c_str() + L"\n";
 
-	if (!out_file_name_.empty()) {
-		AppendData(out_file_name_.c_str(), data.c_str());
-	}
-
-	std::cout << data;
+	AppendData(out_file_name_.c_str(), result);
 }
 
-void KfLog::Output(const std::string& value) {
-	std::string data = value;
-	data.append("\n");
+void KfLog::Output(const char* type, const char* file, const char* function, int line, const std::string& value) {
+	KfString log_header = ContactLogHeader(type, file, function, line).c_str();
 
-	if (!out_file_name_.empty()) {
-		AppendData(out_file_name_.c_str(), data.c_str());
-	}
+	auto result = log_header + L" " + value.c_str() + L"\n";
 
-	std::cout << data;
+	AppendData(out_file_name_.c_str(), result);
 }
 
-void KfLog::Output(const std::wstring& value) {
-	std::string data = CStringHelper::w2a(value);
-	data.append("\n");
+void KfLog::Output(const char* type, const char* file, const char* function, int line, const std::wstring& value) {
+	KfString log_header = ContactLogHeader(type, file, function, line).c_str();
 
-	if (!out_file_name_.empty()) {
-		AppendData(out_file_name_.c_str(), data.c_str());
-	}
+	auto result = log_header + L" " + value.c_str() + L"\n";
 
-	std::cout << data;
+	AppendData(out_file_name_.c_str(), result);
 }
 
 void KfLog::SetInfoTextAttribute() {
@@ -140,6 +106,13 @@ std::string KfLog::GetLogPath() {
 }
 
 bool KfLog::AppendData(const char* path, const char* data) {
+	std::unique_lock<std::mutex> lock(mtx_);
+
+	// OutputDebugStringA(data);
+	// OutputDebugStringA("\n");
+
+	std::cout << data << "\n";
+
 	FILE* f;
 	auto err = fopen_s(&f, path, "ab");
 	if (f == nullptr) {
@@ -149,6 +122,24 @@ bool KfLog::AppendData(const char* path, const char* data) {
 	fwrite(data, strlen(data), 1, f);
 	fclose(f);
 	return true;
+}
+
+std::wstring KfLog::ContactLogHeader(const char* type, const char* file, const char* function, int line) {
+	auto current_time = std::chrono::system_clock::now();
+	std::time_t t = std::chrono::system_clock::to_time_t(current_time);
+	std::tm now;
+	std::ignore = localtime_s(&now, &t);
+
+	char error_info[MAX_PATH];
+	ZeroMemory(error_info, sizeof(error_info));
+
+	if (StrStrIA(type, "error")) {
+		std::ignore = sprintf_s(error_info, MAX_PATH, "error code: %d", GetLastError());
+	}
+
+	return KfString::Format("[%s %04d-%02d-%02d %02d:%02d:%02d]%s:%d %s %s",
+							type, now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec,
+							PathFindFileNameA(file), line, function, error_info);
 }
 
 
@@ -161,8 +152,14 @@ bool KfLog::AppendData(const char* path, const char* data) {
 
 
 
-KfTimer::KfTimer(const char* index) {
-	index_ = index;
+KfTimer::KfTimer(const std::string& value) {
+	index_ = value;
+	KF_INFO("start executable: %s", index_.c_str());
+	start_time_ = GetTickCount();
+}
+
+KfTimer::KfTimer(const std::wstring& value) {
+	index_ = CStringHelper::w2a(value);
 	KF_INFO("start executable: %s", index_.c_str());
 	start_time_ = GetTickCount();
 }
@@ -203,13 +200,4 @@ KfTimer::~KfTimer() {
 	}
 
 	KF_INFO("finished executable: %s, time: %dms", index_.c_str(), diff_time);
-}
-
-
-void logTest() {
-	KF_TIMER(L"%s", __FUNCTIONW__);
-
-	KF_INFO("hello %s", "world");
-	KF_WARN("hello %s", "world");
-	KF_ERROR("hello %s", "world");
 }

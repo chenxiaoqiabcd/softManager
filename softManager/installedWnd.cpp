@@ -11,6 +11,7 @@
 #include "UpdateDetection.h"
 
 CInstalledWnd::~CInstalledWnd() {
+	EventQueueInstance->RemoveNewThreadListener(this);
 	UpdateInstance->GetDataCenter()->Detach(this);
 }
 

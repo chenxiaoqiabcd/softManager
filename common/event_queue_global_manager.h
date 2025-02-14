@@ -40,6 +40,8 @@ public:
 
 	void AppendNewThreadListener(int event, const std::function<DWORD(WPARAM, LPARAM, LPVOID)>& callback, LPVOID data);
 
+	bool RemoveNewThreadListener(LPVOID data);
+
 	void AppendMainThreadListener(int event, const std::function<DWORD(WPARAM, LPARAM)>& callback, HWND hWnd);
 
 	void AppendMainThreadListener(int event, const std::function<DWORD(WPARAM, LPARAM, LPVOID)>& callback, HWND hWnd, LPVOID data);
@@ -62,7 +64,7 @@ private:
 	inline static eventpp::EventQueue<int, DWORD(WPARAM, LPARAM, LPVOID), LPVOID> new_thread_param_queue_;
 
 	inline static std::vector<int> new_thread_event_list_;
-	inline static std::map<int, LPVOID> new_thread_event_param_list_;
+	inline static std::vector<std::tuple<int, LPVOID>> new_thread_event_param_list_;
 
 	inline static eventpp::EventQueue<int, DWORD(WPARAM, LPARAM)> main_thread_queue_;
 	inline static eventpp::EventQueue<int, DWORD(WPARAM, LPARAM, LPVOID), LPVOID> main_thread_param_queue_;

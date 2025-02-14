@@ -116,7 +116,7 @@ auto OutputHeader(void* ptr, size_t size, size_t nmemb, void* stream) -> size_t 
 }
 
 double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* ptr_file_name,
-											 bool no_body /*= true*/) const {
+											 long no_body /*= 1*/) const {
 	auto ReleaseCurl = [](CURL* c) {
 		curl_easy_cleanup(c);
 	};
@@ -155,10 +155,8 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 
 	curl_easy_setopt(curl_guard.get(), CURLOPT_NOPROGRESS, 1L);
 
-	if(no_body) {
-		// 开启这个选项会导致Figma下载404
-		curl_easy_setopt(curl_guard.get(), CURLOPT_NOBODY, 1L);
-	}
+	// 开启这个选项会导致Figma下载404
+	curl_easy_setopt(curl_guard.get(), CURLOPT_NOBODY, 1L);
 
 	const CURLcode code = curl_easy_perform(curl_guard.get());
 
@@ -187,7 +185,9 @@ double CurlDownloadRequest::GetContentLength(bool* accept_ranges, std::string* p
 	return -1;
 }
 
-std::map<int, long long> download_map_;
+std::map<int, uint64_t> download_map_;
+
+int download_index = 0;
 
 long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view target_file_path, 
 									   unsigned thread_count) {
@@ -229,7 +229,7 @@ long CurlDownloadRequest::DownloadFile(double content_length, std::wstring_view 
 
 		node->curl = curl;
 		node->file = file;
-		node->index = n + 1;
+		node->index = download_index++;
 
 		curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
 
@@ -324,11 +324,13 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 	curl_easy_setopt(single_curl_, CURLOPT_FOLLOWLOCATION, 1L);
 
 	curl_easy_setopt(single_curl_, CURLOPT_WRITEDATA, file);
-	curl_easy_setopt(single_curl_, CURLOPT_WRITEFUNCTION, WriteSingleThreadDownloadFunction);
+	curl_easy_setopt(single_curl_, CURLOPT_WRITEFUNCTION,
+					 WriteSingleThreadDownloadFunction);
 
 	curl_easy_setopt(single_curl_, CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(single_curl_, CURLOPT_XFERINFODATA, this);
-	curl_easy_setopt(single_curl_, CURLOPT_XFERINFOFUNCTION, SingleProcessProgressFunction);
+	curl_easy_setopt(single_curl_, CURLOPT_XFERINFOFUNCTION,
+					 SingleProcessProgressFunction);
 
 	const auto code = curl_easy_perform(single_curl_);
 
@@ -342,18 +344,26 @@ bool CurlDownloadRequest::DownloadSingleThreadFile(const wchar_t* target_file_pa
 
 	if (CURLE_OK == code) {
 		if (nullptr != download_finished_callback_) {
-			if (download_result_code_ == CURLE_ABORTED_BY_CALLBACK || download_result_code_ == CURLE_BAD_FUNCTION_ARGUMENT) {
+			if (download_result_code_ == CURLE_ABORTED_BY_CALLBACK ||
+				download_result_code_ == CURLE_BAD_FUNCTION_ARGUMENT) {
 				// 取消下载
 				KF_INFO("cancel download, url: %s, code: %d", url_.c_str(), code);
 				return code == CURLE_OK;
 			}
 
 			download_finished_callback_(download_finished_callback_data_,
-										download_finished_callback_sign_.c_str(), target_file_path, code, 200);
+										download_finished_callback_sign_.c_str(),
+										target_file_path, code, 200);
 		}
 
 		KF_INFO("success download, url: %s", url_.c_str());
 		return true;
+	}
+
+	if (nullptr != download_finished_callback_) {
+		download_finished_callback_(download_finished_callback_data_,
+									download_finished_callback_sign_.c_str(),
+									target_file_path, code, 200);
 	}
 
 	KF_WARN("failed download, url: %s, code: %d", url_.c_str(), code);
@@ -418,47 +428,30 @@ int CurlDownloadRequest::ProgressFunction(void* ptr, double total_to_download, d
 		double speed;
 		curl_easy_getinfo(node->curl, CURLINFO_SPEED_DOWNLOAD, &speed);
 
-		long long total_download_size = 0;
+		uint64_t total_download_size = 0;
 
-		for (const auto& it : download_map_) {
-			total_download_size += it.second;
+		auto concurrency = std::thread::hardware_concurrency();
+
+		int start = (node->index / concurrency) * concurrency;
+		for (auto i = start; i < start + concurrency; ++i) {
+			total_download_size += download_map_[i];
 		}
 
 		const auto total = node->end_pos - node->record_start_pos;
 
 		auto pos = static_cast<double>(total) - total_to_download + now_downloaded;
 
-		const auto it_find = download_map_.find(node->index);
-		if (it_find != download_map_.end() && pos > it_find->second) {
-			KF_INFO("download index: %2d progress: %3.2lf%% %10s/%10s %6.2lf%% speed: %10s/s",
-					node->index,
-					total_download_size * 100.0 / node->total_download_size,
-					Helper::ToStringSize(now_downloaded).c_str(),
-					Helper::ToStringSize(total_to_download).c_str(),
-					now_downloaded * 100.0 / total_to_download,
-					Helper::ToStringSize(speed).c_str());
-		}
-
 		if (download_map_[node->index] <= pos) {
 			download_map_[node->index] = pos;
-		}
-		else {
-			int i = 0;
-			++i;
 
-			static auto t = total_to_download;
-			static auto n = now_downloaded;
-			static auto r = total;
-
-			int s = 0;
-			s++;
-		}
-
-		if (nullptr != node->download_progress_callback_) {
-			result = node->download_progress_callback_(node->download_progress_callback_data_,
-													   node->download_progress_callback_sign_,
-													   total_download_size, node->total_download_size,
-													   node->index, pos, total);
+			if (nullptr != node->download_progress_callback_) {
+				result = node->download_progress_callback_(node->download_progress_callback_data_,
+														   node->download_progress_callback_sign_,
+														   total_download_size,
+														   node->total_download_size,
+														   node->index, pos,
+														   total);
+			}
 		}
 
 		mtx.unlock();
@@ -482,29 +475,31 @@ int CurlDownloadRequest::SingleProcessProgressFunction(void* ptr, double total_t
 		double speed;
 		curl_easy_getinfo(pThis->single_curl_, CURLINFO_SPEED_DOWNLOAD, &speed);
 
-		if(nullptr != pThis->download_progress_single_thread_callback_) {
+		if (nullptr != pThis->download_progress_single_thread_callback_) {
 			result = pThis->download_progress_single_thread_callback_(pThis->download_progress_single_thread_callback_data_,
 																	  pThis->download_progress_single_thread_sign_.c_str(),
-																	  total_to_download, now_downloaded, speed);
-		} 
+																	  total_to_download,
+																	  now_downloaded,
+																	  speed);
+		}
 	}
 
 	return result;
 }
 
 void CurlDownloadRequest::Download(DownloadNode* node) {
-	auto code = curl_easy_perform(node->curl);
+	download_result_code_ = curl_easy_perform(node->curl);
 
-	if (CURLE_OK == code) {
+	if (CURLE_OK == download_result_code_) {
 		KF_INFO("success download index: %d", node->index);
 	}
 	else {
-		KF_WARN("failed download index: %d, code: %d", node->index, code);
+		KF_WARN("failed download index: %d, code: %d", node->index, download_result_code_);
 	}
 
 	uint8_t retries = 1;
 
-	while (CURLE_OK != code) {
+	while (CURLE_OK != download_result_code_) {
 		KF_INFO("retry download thread: %d, start: %lld, end: %lld, size: %s, retry count: %d",
 				node->index, node->start_pos, node->end_pos,
 				Helper::ToStringSize(node->end_pos - node->start_pos).c_str(), retries++);
@@ -516,21 +511,20 @@ void CurlDownloadRequest::Download(DownloadNode* node) {
 
 		curl_easy_setopt(node->curl, CURLOPT_RANGE, range.c_str());
 
-		code = curl_easy_perform(node->curl);
+		download_result_code_ = curl_easy_perform(node->curl);
 
-		if (CURLE_OK == code) {
+		if (CURLE_OK == download_result_code_) {
 			KF_INFO("success download index: %d", node->index);
 			break;
 		}
 
-		download_result_code_ = code;
-
-		if (CURLE_ABORTED_BY_CALLBACK == code) {
+		if (CURLE_ABORTED_BY_CALLBACK == download_result_code_) {
 			KF_INFO("abort download");
 			break;
 		}
 
-		KF_WARN("failed download index: %d, code: %d", node->index, code);
+		KF_WARN("failed download index: %d, code: %d",
+				node->index, download_result_code_);
 	}
 
 	curl_easy_cleanup(node->curl);

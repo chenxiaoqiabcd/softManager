@@ -28,7 +28,27 @@ void CEventQueueGlobalManager::AppendNewThreadListener(int event, const std::fun
 
 void CEventQueueGlobalManager::AppendNewThreadListener(int event, const std::function<DWORD(WPARAM, LPARAM, LPVOID)>& callback, LPVOID data) {
 	new_thread_param_queue_.appendListener(event, callback);
-	new_thread_event_param_list_[event] = data;
+	new_thread_event_param_list_.emplace_back(event, data);
+}
+
+bool CEventQueueGlobalManager::RemoveNewThreadListener(LPVOID data) {
+	bool erased = false;
+	int erased_count = 0;
+
+	do{
+		auto size = new_thread_event_param_list_.size();
+
+		for (size_t index = 0; index < size; ++index) {
+			if (std::get<1>(new_thread_event_param_list_[index]) == data) {
+				new_thread_event_param_list_.erase(new_thread_event_param_list_.begin() + index);
+				erased = true;
+				erased_count++;
+				break;
+			}
+		}
+	} while (erased);
+
+	return 0 < erased_count;
 }
 
 void CEventQueueGlobalManager::AppendMainThreadListener(int event, const std::function<DWORD(WPARAM, LPARAM)>& callback, HWND hWnd) {
@@ -56,9 +76,13 @@ void CEventQueueGlobalManager::PostEvent(int event, WPARAM wParam, LPARAM lParam
 		return;
 	} 
 
-	auto it_find = new_thread_event_param_list_.find(event);
+	auto FoundEventParam = [event](std::tuple<int, LPVOID>& data) {
+		return std::get<0>(data) == event;
+	};
 
-	if(it_find != new_thread_event_param_list_.end()) {
+	if (std::any_of(new_thread_event_param_list_.begin(),
+					new_thread_event_param_list_.end(),
+					FoundEventParam)) {
 		auto info = new EventInfo;
 
 		info->id = event;
@@ -161,10 +185,13 @@ DWORD CEventQueueGlobalManager::ThreadPostEventFunc(void* pArguments) {
 		return 0;
 	}
 
-	const auto it_find = new_thread_event_param_list_.find(event_info->id);
-	if(it_find != new_thread_event_param_list_.end()) {
-		new_thread_param_queue_.dispatch(event_info->id, event_info->wParam, event_info->lParam,
-										 it_find->second);
+	for (auto& it : new_thread_event_param_list_) {
+		if (std::get<0>(it) == event_info->id) {
+			new_thread_param_queue_.dispatch(event_info->id,
+											 event_info->wParam,
+											 event_info->lParam,
+											 std::get<1>(it));
+		}
 	}
 
 	return 0;
