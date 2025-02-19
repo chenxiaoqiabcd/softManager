@@ -37,6 +37,21 @@ add_executable(softManager
 	${resource_files}
 )
 
+set(CPM_DOWNLOAD_VERSION 0.40.5) 
+set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
+
+if(NOT (EXISTS ${CPM_DOWNLOAD_LOCATION}))
+    message(STATUS "Downloading CPM.cmake")
+    file(DOWNLOAD
+		https://github.com/TheLartians/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
+		${CPM_DOWNLOAD_LOCATION})
+endif()
+
+if(EXISTS ${CPM_DOWNLOAD_LOCATION})
+	include(${CPM_DOWNLOAD_LOCATION})
+	CPMAddPackage("gh:Neargye/nameof@0.10.4")
+endif()
+
 target_include_directories(softManager PRIVATE
 	${PROJECT_SOURCE_DIR}/softManager
 	${PROJECT_SOURCE_DIR}/common
@@ -44,6 +59,8 @@ target_include_directories(softManager PRIVATE
 	${PROJECT_SOURCE_DIR}/third_party/curl/include
 	${PROJECT_SOURCE_DIR}/third_party/DuiLib/src
 	${PROJECT_SOURCE_DIR}/third_party/openssl-openssl-3.3.1/include
+
+	${nameof_SOURCE_DIR}/include
 )
 
 SET_TARGET_PROPERTIES(softManager   PROPERTIES  LINK_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ignore:4099")
@@ -71,7 +88,7 @@ target_link_libraries(softManager
 	${PROJECT_SOURCE_DIR}/third_party/openssl-openssl-3.3.1/lib/VC/x86/MT/libssl_static.lib
 )
 
-# add_custom_command(TARGET softManager POST_BUILD
-# 	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
-# 	COMMENT "editbin successed!!!"
-# )
+add_custom_command(TARGET softManager POST_BUILD
+	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
+	COMMENT "editbin successed!!!"
+)

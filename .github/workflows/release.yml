@@ -17,6 +17,7 @@ jobs:
       - name: build
         run: |
           python make_setup.py
+          python release.py
 
   release:
     runs-on: self-hosted
