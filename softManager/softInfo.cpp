@@ -4,14 +4,29 @@
 #include "softInfo.h"
 
 #include <algorithm>
-#include <filesystem>
-#include <Msi.h>
 
 #include "cache_data_helper.h"
-#include "event_queue_global_manager.h"
 #include "file_helper.h"
 #include "helper.h"
 #include "versionHelper.h"
+
+std::wstring SoftInfo::GetIconPath() const {
+	if (-1 == icon_index) {
+		return FileHelper::GetFilePath(display_icon);
+	}
+
+	return FileHelper::GetIconWithDllPath(display_icon.c_str(), icon_index);
+}
+
+
+
+
+
+
+
+
+
+
 
 CSoftInfo::CSoftInfo() {
 	
@@ -196,8 +211,36 @@ bool IsValidInstallPath(const CString& install_path, const CString& uninstall_pa
 	return false;
 }
 
+std::tuple<std::wstring, int> CSoftInfo::GetDisplayIcon(HKEY key) {
+	DWORD dw_type = REG_SZ;
+
+	DWORD dw_len = 1024;
+	TCHAR szBuffer[1024] = { 0 };
+
+	RegQueryValueEx(key, _T("DisplayIcon"), nullptr, &dw_type,
+					reinterpret_cast<LPBYTE>(szBuffer), &dw_len);
+
+	std::wstring icon_path = szBuffer;
+
+	const auto index = icon_path.find(',');
+
+	if (std::string::npos != index) {
+		auto dll_path = icon_path.substr(0, index);
+		auto icon_index = std::stoi(icon_path.substr(index + 1));
+
+		return { dll_path, icon_index };
+	}
+
+	return { icon_path, -1 };
+}
+
 SoftInfo CSoftInfo::GenerateSoftInfo(HKEY key, const wchar_t* key_name, DWORD ulOptions) {
 	SoftInfo info{};
+
+	auto data = GetDisplayIcon(key);
+
+	info.display_icon = std::get<0>(data);
+	info.icon_index = std::get<1>(data);
 
 	info.time_stamp = Helper::RegisterQueryLastWriteTime(key);
 	info.m_strSoftName = Helper::RegisterQueryValue(key, L"DisplayName").c_str();
@@ -207,7 +250,6 @@ SoftInfo CSoftInfo::GenerateSoftInfo(HKEY key, const wchar_t* key_name, DWORD ul
 	info.key_name = key_name;
 	info.m_strPublisher = Helper::RegisterQueryValue(key, L"Publisher").c_str();
 	info.m_strMainProPath = Helper::RegisterQueryValue(key, L"InstallLocation").c_str();
-	info.m_strSoftIcon = GetIcon(key);
 	info.bit = (ulOptions & KEY_WOW64_64KEY) ? 64 : 32;
 
 	return info;
@@ -242,7 +284,7 @@ bool CSoftInfo::CheckSoftInfo(SoftInfo* info) {
 
 	if (info->m_strSoftVersion.IsEmpty()) {
 		info->m_strSoftVersion =
-			FileHelper::GetFileVersion(info->m_strSoftIcon).c_str();
+			FileHelper::GetFileVersion(info->display_icon.c_str()).c_str();
 	}
 
 	if (info->m_strSoftVersion.IsEmpty() || info->m_strSoftVersion == L"1") {

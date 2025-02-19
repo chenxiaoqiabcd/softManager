@@ -14,6 +14,7 @@
 
 CUpdateWnd::~CUpdateWnd() {
 	UpdateInstance->GetDataCenter()->Detach(this);
+	EventQueueInstance->RemoveNewThreadListener(this);
 }
 
 LPCTSTR CUpdateWnd::GetSkinFile() {
@@ -66,7 +67,7 @@ CUpdateListElementUI* CUpdateWnd::CreateLine(const SoftInfo& soft_it, const Upda
 
 		line->SetScheme(scheme_.get());
 		line->SetSoftName(soft_it.m_strSoftName);
-		line->SetIcon(soft_it.m_strSoftIcon, soft_it.key_name,
+		line->SetIcon(soft_it.GetIconPath().c_str(), soft_it.key_name,
 					  soft_it.m_strInstallLocation);
 		line->SetBit(soft_it.bit);
 		line->SetLocalVersion(soft_it.m_strSoftVersion);

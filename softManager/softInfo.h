@@ -14,8 +14,9 @@
 
 struct SoftInfo
 {
-	// 软件图标程序（通常是运行程序）
-	CString m_strSoftIcon;
+	int icon_index = -1;
+
+	std::wstring display_icon;
 	// 软件名
 	CString m_strSoftName;
 	// 软件版本号
@@ -34,6 +35,8 @@ struct SoftInfo
 	uint8_t bit;	// 32/64
 
 	time_t time_stamp;
+
+	std::wstring GetIconPath() const;
 };
 
 class CSoftInfo
@@ -73,6 +76,8 @@ public:
 protected:
 	// 获取程序图标
 	CString GetIcon(HKEY key);
+
+	std::tuple<std::wstring, int> GetDisplayIcon(HKEY key);
 
 	SoftInfo GenerateSoftInfo(HKEY key, const wchar_t* key_name, DWORD ulOptions);
 

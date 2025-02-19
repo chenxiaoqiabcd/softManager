@@ -63,7 +63,6 @@ void SoftInfoCacheData::SetValue(const SoftInfo& info, HKEY root_key, DWORD ulOp
 
 	jsoncons::json root;
 
-	root["icon"] = CStringHelper::w2u(info.m_strSoftIcon.GetString());
 	root["name"] = CStringHelper::w2u(info.m_strSoftName.GetString());
 	root["version"] = CStringHelper::w2u(info.m_strSoftVersion.GetString());
 	root["install_location"] = CStringHelper::w2u(info.m_strInstallLocation.GetString());
@@ -74,6 +73,8 @@ void SoftInfoCacheData::SetValue(const SoftInfo& info, HKEY root_key, DWORD ulOp
 	root["time_stamp"] = info.time_stamp;
 	root["key"] = reinterpret_cast<long long>(root_key);
 	root["options"] = ulOptions;
+	root["display_icon"] = CStringHelper::w2u(info.display_icon);
+	root["icon_index"] = info.icon_index;
 
 	std::string root_data;
 	root.dump(root_data);
@@ -94,7 +95,6 @@ bool SoftInfoCacheData::GetValue(const wchar_t* key_name, HKEY root_key, DWORD u
 		return false;
 	}
 
-	ptr_info->m_strSoftIcon = CStringHelper::u2w(root["icon"].as_string()).c_str();
 	ptr_info->m_strSoftName = CStringHelper::u2w(root["name"].as_string()).c_str();
 	ptr_info->m_strSoftVersion = CStringHelper::u2w(root["version"].as_string()).c_str();
 	ptr_info->m_strInstallLocation = CStringHelper::u2w(root["install_location"].as_string()).c_str();
@@ -104,6 +104,8 @@ bool SoftInfoCacheData::GetValue(const wchar_t* key_name, HKEY root_key, DWORD u
 	ptr_info->bit = root["bit"].as<uint8_t>();
 	ptr_info->time_stamp = root["time_stamp"].as<time_t>();
 	ptr_info->key_name = key_name;
+	ptr_info->display_icon = CStringHelper::u2w(root["display_icon"].as_string());
+	ptr_info->icon_index = root["icon_index"].as<int>();
 
 	return true;
 }

@@ -1,10 +1,12 @@
 #include "versionHelper.h"
 
 #include "common_helper.h"
+#include "kf_str.h"
 #include "stringHelper.h"
 
-VersionHelper::VersionHelper() : base_code_(0), alpha_code(0), beta_code_(0), rc_code_(0) {
-	
+VersionHelper::VersionHelper()
+	: base_code_(0), alpha_code(0), beta_code_(0), rc_code_(0) {
+
 }
 
 VersionHelper::VersionHelper(const char* version) : VersionHelper() {
@@ -42,13 +44,13 @@ bool VersionHelper::Parse(const char* version) {
 	return true;
 }
 
-std::string VersionHelper::ToString() {
-	char version[32] = { 0 };
-	sprintf_s(version, "%d.%d.%d.%d", base_code_, alpha_code, beta_code_, rc_code_);
-	return version;
+std::string VersionHelper::ToString() const {
+	return KfString::Format("%d.%d.%d.%d",
+							base_code_, alpha_code, beta_code_,
+							rc_code_).GetString();
 }
 
-bool VersionHelper::operator<(const VersionHelper& version_helper) {
+bool VersionHelper::operator<(const VersionHelper& version_helper) const {
 	if(base_code_ > version_helper.base_code_) {
 		return false;
 	}
@@ -76,7 +78,7 @@ bool VersionHelper::operator<(const VersionHelper& version_helper) {
 	return true;
 }
 
-bool VersionHelper::operator>(const VersionHelper& version_helper) {
+bool VersionHelper::operator>(const VersionHelper& version_helper) const {
 	if (base_code_ < version_helper.base_code_) {
 		return false;
 	}
@@ -113,6 +115,8 @@ bool VersionHelper::operator<=(const VersionHelper& version_helper) {
 }
 
 bool VersionHelper::operator==(const VersionHelper& version_helper) const {
-	return base_code_ == version_helper.base_code_ && alpha_code == version_helper.alpha_code
-		&& beta_code_ == version_helper.beta_code_ && rc_code_ == version_helper.rc_code_;
+	return base_code_ == version_helper.base_code_ &&
+		alpha_code == version_helper.alpha_code &&
+		beta_code_ == version_helper.beta_code_ &&
+		rc_code_ == version_helper.rc_code_;
 }

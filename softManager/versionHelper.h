@@ -13,11 +13,11 @@ public:
 
 	bool Parse(const char* version);
 
-	std::string ToString();
+	std::string ToString() const;
 
-	bool operator < (const VersionHelper& version_helper);
+	bool operator < (const VersionHelper& version_helper) const;
 
-	bool operator > (const VersionHelper& version_helper);
+	bool operator > (const VersionHelper& version_helper) const;
 
 	bool operator >= (const VersionHelper& version_helper);
 

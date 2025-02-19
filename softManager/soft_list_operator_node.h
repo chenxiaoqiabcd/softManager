@@ -88,7 +88,7 @@ private:
 	DuiLib::CButtonUI* btn_uninstall_ = nullptr;
 	DuiLib::CButtonUI* btn_update_ = nullptr;
 
-	DuiLib::CTabLayoutUI* tab_layout_;
+	DuiLib::CTabLayoutUI* tab_layout_ = nullptr;
 
 	Scheme* scheme_ = nullptr;
 

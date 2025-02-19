@@ -38,6 +38,8 @@ bool CEventQueueGlobalManager::RemoveNewThreadListener(LPVOID data) {
 	do{
 		auto size = new_thread_event_param_list_.size();
 
+		erased = false;
+
 		for (size_t index = 0; index < size; ++index) {
 			if (std::get<1>(new_thread_event_param_list_[index]) == data) {
 				new_thread_event_param_list_.erase(new_thread_event_param_list_.begin() + index);

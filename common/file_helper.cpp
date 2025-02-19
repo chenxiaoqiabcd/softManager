@@ -37,7 +37,7 @@ std::wstring FileHelper::GetIconWithIcoPath(const wchar_t* path) {
 
 	auto bitmap_path = Helper::GetCacheFile(file_name.GetWString().c_str());
 
-	if (PathFileExists(bitmap_path.c_str())) {
+	if (!DeleteFile(bitmap_path.c_str())) {
 		return bitmap_path;
 	}
 
