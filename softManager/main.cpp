@@ -8,8 +8,6 @@
 #include "resource.h"
 #include "track.h"
 
-#pragma comment(lib, "Msi.lib")
-
 using DuiLib::CPaintManagerUI;
 
 bool SetResourceZip(HINSTANCE hInstance);

@@ -3,7 +3,7 @@
 	<Font id="0" name="微软雅黑" size="12" default="true" />
 	<Font id="1" name="微软雅黑" size="16" />
 	<Font id="2" name="微软雅黑" size="18" />
-	<Font id="3" name="微软雅黑" />
+	<Font id="3" name="΢���ź�" />
 	<Font id="4" name="微软雅黑" size="14" />
 	<Font id="5" name="微软雅黑" size="24" />
 	<Font id="6" name="微软雅黑" size="48" />
@@ -19,12 +19,10 @@
 			<Control />
 			<Button name="btn_add_task" width="30" text="+" bordersize="1" bordercolor="0xFF7d7d7d" textcolor="0xFFf2fbec" />
 		</HorizontalLayout>
-		<List padding="20,20,20,20" bordersize="1" bordercolor="0xFF7d7d7d">
+		<List name="download_list" padding="20,20,20,20" bordersize="1" bordercolor="0xFF7d7d7d">
 			<ListHeader>
-				<ListHeaderItem text="编号" textcolor="0xFFf2fbec" width="80" />
-				<Control width="1" bkcolor="0xFF5e5e5e" />
+				<ListHeaderItem text="文件名" textcolor="0xFFf2fbec" />
 				<ListHeaderItem text="下载链接" textcolor="0xFFf2fbec" />
-				<Control width="1" bkcolor="0xFF5e5e5e" />
 				<ListHeaderItem text="下载位置" textcolor="0xFFf2fbec" />
 			</ListHeader>
 		</List>

@@ -33,6 +33,8 @@ void CurlDownloadManager::AddTask(const char* url, bool accept_ranges,
 	info.file_path = file_path;
 	info.callback_info = callback_info;
 
+	task_infos.emplace_back(info);
+
 	callback_info.notify_callback(callback_info.user_ptr, url, "≈≈∂”÷–...");
 
 	PushTask();

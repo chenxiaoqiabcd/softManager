@@ -11,7 +11,6 @@ project(duilib)
 
 include_directories(
 	src
-	third_party/lunasvg/include
 )
 
 FILE(GLOB CORE_FILES "src/*.*" 
@@ -27,8 +26,6 @@ source_group(util ${UTIL_FILES})
 add_library(duilib STATIC ${CORE_FILES} ${UTIL_FILES})
 
 set_target_properties(duilib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-add_subdirectory(third_party/lunasvg)
 
 set_target_properties(lunasvg PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 

@@ -2,12 +2,56 @@
 
 #include <memory>
 #include <string_view>
+#include <thread>
 #include <curl/curl.h>
 
 #include "WndImpl.h"
 
 class Scheme;
 class CurlDownloadRequest;
+
+class DownloadElementUI : public DuiLib::CListContainerElementUI {
+public:
+	~DownloadElementUI();
+
+	void SetUrl(const char* url);
+
+	void SetAcceptRanges(bool value);
+
+	void SetSize(double value);
+
+	void SetSavePath(const wchar_t* value);
+protected:
+	void Init() override;
+
+	static int OnProgressCallback(void* ptr, const char* url, double rate);
+
+	static void OnFinishedCallback(void* ptr, const char* url,
+								   const wchar_t* file_path, CURLcode code,
+								   int http_code);
+
+	static void OnNotifyCallback(void* ptr, const char* url, const char* msg);
+private:
+	std::string url_;
+
+	bool accept_ranges_ = false;
+
+	double size_ = 0.0f;
+
+	std::wstring save_path_;
+
+	std::thread thread_;
+};
+
+
+
+
+
+
+
+
+
+
 
 class MainWindow : public CWndImpl
 {
@@ -16,23 +60,11 @@ protected:
 
 	void Init() override;
 
+	void NotifyAddTask();
+
 	void Notify(DuiLib::TNotifyUI& msg) override;
 
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-
-	static void OnFinishedCallback(void* ptr, const char* sign,
-								   std::wstring_view file_path, CURLcode code, int http_code);
-
-	static int OnProgressSingleThreadCallback(void* ptr, double total_to_download,
-											  double now_downloaded, double, double);
-
-	static int OnProgressFunctionV2(void* ptr, const char* sign, double now_downloaded, double total_to_download,
-									int index, long long now_download_size,
-									long long total_download_size);
 private:
-	bool DownloadTask(const char* url, const wchar_t* dest_folder);
-
-	std::shared_ptr<CurlDownloadRequest> download_request_;
-
 	std::shared_ptr<Scheme> scheme_;
 };

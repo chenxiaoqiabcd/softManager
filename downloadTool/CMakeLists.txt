@@ -41,7 +41,9 @@ target_include_directories(downloadTool PRIVATE
 	${PROJECT_SOURCE_DIR}/common
 	${PROJECT_SOURCE_DIR}/third_party/DuiLib/src
 	${PROJECT_SOURCE_DIR}/third_party/curl/include
-	${PROJECT_SOURCE_DIR}/third_party
+
+	${jsoncons_SOURCE_DIR}/include
+	${eventpp_SOURCE_DIR}/include
 )
 
 SET_TARGET_PROPERTIES(downloadTool PROPERTIES  LINK_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ignore:4099 /force")
@@ -52,6 +54,7 @@ target_link_libraries(downloadTool
 	duilib
 
 	lunasvg
+	msvcrt.lib
 	
 	debug ${PROJECT_SOURCE_DIR}/third_party/curl/debug/lib/libcurl-d.lib
 	debug ${PROJECT_SOURCE_DIR}/third_party/curl/debug/lib/zlibd.lib
@@ -64,3 +67,8 @@ target_link_libraries(downloadTool
 	wldap32.lib
 	Crypt32.lib
 )
+
+# add_custom_command(TARGET downloadTool POST_BUILD
+#	COMMAND editbin /SUBSYSTEM:CONSOLE \"$(OutDir)$(ProjectName).exe\"
+#	COMMENT "editbin successed!!!"
+# )
